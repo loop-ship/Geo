@@ -714,8 +714,9 @@
     #standing-key {
       left: 26px; top: 172px; transform: none; flex-wrap: wrap; gap: 8px 12px; max-width: calc(100vw - 52px);
     }
-    /* mobile: push the story/scenario caption below the (now taller, restacked) standing-key legend */
-    #scenario { top: 226px; max-width: calc(100vw - 52px); }
+    /* mobile: push the story/scenario caption clear below the (restacked, 2-row) standing-key legend,
+       with margin so they can't touch on devices where the legend wraps taller */
+    #scenario { top: 258px; max-width: calc(100vw - 52px); }
   }
 
   /* Stage 5 — model caveats / honesty panel */
@@ -2986,13 +2987,19 @@ function setCaptionBox(name, chipText, chipColor, text) {
   document.getElementById('scenario-cap').textContent = text;
   box.style.borderLeftColor = chipColor;
   box.style.display = 'block';
+  // During a guided story the transport bar's "Exit" is how you leave; hide the caption × so that
+  // dismissing the narration text can't (confusingly) stop the whole story. Preset captions keep the ×.
+  document.getElementById('scenario-close').style.display = story.active ? 'none' : 'block';
 }
 function showScenario(p) {
   const s = STANDING[p.standing];
   setCaptionBox(p.label, s.icon + ' ' + (p.standingWord || s.word), s.color, p.caption);
 }
 function hideScenario() { const b = document.getElementById('scenario'); if (b) b.style.display = 'none'; }
-document.getElementById('scenario-close').addEventListener('click', () => { hideScenario(); if (story.active) exitStory(); });
+// the caption × only DISMISSES the caption; it must NOT stop a running story (that was the old bug —
+// closing the narration exited the story). During a story the × is hidden anyway (see setCaptionBox);
+// this handler now just serves the preset captions.
+document.getElementById('scenario-close').addEventListener('click', hideScenario);
 
 // apply a preset THROUGH the existing setters (single source of truth), animated; then free-explore.
 function applyPreset(p) {
