@@ -491,6 +491,14 @@
     color: var(--ink-dim); font-size: 13px; line-height: 1;
   }
   #scenario .x:hover { color: var(--cyan); border-color: var(--cyan); }
+  /* GUIDED-STORY NARRATION as a lower-third band (chosen 2026-07-30): while a story plays, the caption
+     leaves the top-left and becomes a translucent band centered just ABOVE the transport controls, so the
+     globe stays fully visible while you read along. Preset captions (no story) keep the top-left card. */
+  body.story-active #scenario {
+    top: auto; bottom: 80px; left: 50%; right: auto; transform: translateX(-50%);
+    width: min(680px, 94vw); max-width: min(680px, 94vw);
+    background: rgba(9, 14, 22, 0.70); border-left-width: 2px;
+  }
 
   /* A2 — story transport bar (bottom centre) */
   #story-bar {
@@ -714,9 +722,20 @@
     #standing-key {
       left: 26px; top: 172px; transform: none; flex-wrap: wrap; gap: 8px 12px; max-width: calc(100vw - 52px);
     }
-    /* mobile: push the story/scenario caption clear below the (restacked, 2-row) standing-key legend,
-       with margin so they can't touch on devices where the legend wraps taller */
+    /* mobile: push the (preset) story/scenario caption clear below the restacked standing-key legend */
     #scenario { top: 258px; max-width: calc(100vw - 52px); }
+    /* mobile: the transport bar was wider than the screen (240px scrubber + fixed button widths), so the
+       Pause button + Step counter got clipped off both edges. Span the viewport with margins and let the
+       scrubber flex to fill, so everything fits any phone width. */
+    #story-bar { left: 12px; right: 12px; transform: none; width: auto; gap: 6px; padding: 8px 10px; }
+    #story-bar #story-scrub { width: auto; flex: 1 1 40px; min-width: 30px; }
+    #story-bar #story-play { min-width: 0; }
+    #story-bar #story-step { min-width: 0; font-size: 9px; }
+    #story-bar button { padding: 5px 7px; }
+    /* mobile: while a story plays, the lower-third band spans the width just above the transport, and the
+       numeric readout (redundant with the narration) hides so the bottom stays clean and uncluttered */
+    body.story-active #scenario { bottom: 76px; width: calc(100vw - 24px); max-width: calc(100vw - 24px); }
+    body.story-active #readout { display: none; }
   }
 
   /* Stage 5 — model caveats / honesty panel */
@@ -3207,6 +3226,7 @@ function startStory(cfg) {
   prepareShiftTarget(pole.lat, pole.lon);
   relaxAnim = null; shiftAnim = null;
   story.active = true; story.T = 0; story.lastStep = -1;
+  document.body.classList.add('story-active');   // CSS retargets the caption to a lower-third band + tidies the bottom bar
   if (storyCfg.driver) {   // E21: the driver sequence brings up the Sun + CME and needs room to frame the chain
     if (!_driverRestore) _driverRestore = { quality: cineParams.quality, showCME: cineParams.showCME, maxDistance: controls.maxDistance };  // stash ONCE (don't capture forced-on values on replay)
     controls.maxDistance = 16;
@@ -3231,6 +3251,7 @@ function restoreDriverCinematic() {   // E21: undo the driver run's cinematic + 
 }
 function exitStory() {
   story.active = false; story.playing = false;
+  document.body.classList.remove('story-active');
   _storyEls['story-bar'].style.display = 'none';
   hideScenario();
   restoreDriverCinematic();
