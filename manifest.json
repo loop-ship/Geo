@@ -1,0 +1,17 @@
+{
+  "name": "Pole-Shift Simulator",
+  "short_name": "Pole Shift",
+  "description": "An interactive 3D globe showing the consequences of a crustal-displacement / pole-shift scenario, with every effect graded by scientific standing. A what-if explorer, not a forecast.",
+  "start_url": "./geo.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#05080d",
+  "theme_color": "#56c4de",
+  "categories": ["education", "science", "utilities"],
+  "icons": [
+    { "src": "./icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "./icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "./icon-512-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

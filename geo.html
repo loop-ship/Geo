@@ -57,6 +57,21 @@
    startup now); ECDO preset regression clean. NOTE: could not get a trustworthy FPS delta from the
    automation environment — the test tab reported document.hidden=true, so Chrome throttled the render
    loop; a real FPS check must be done on a focused desktop tab (user action).
+ - 2026-07-30: PWA — INSTALLABLE + OFFLINE. New siblings: manifest.json (standalone, brand colours,
+   start_url ./geo.html so home-screen launch skips the index redirect), icon-192/512/512-maskable.png
+   (generated from earth_day.jpg = a real Earth disc on #05080d), and sw.js. SW strategy is deliberately
+   SPLIT and must stay that way: HTML is NETWORK-FIRST (so a pushed update always reaches returning
+   visitors — cache-first HTML is how a PWA gets stuck on a stale build), everything else (24MB terrain,
+   textures, JSON, pinned CDN modules) is CACHE-FIRST. CDN modules are cached AT RUNTIME, never
+   precached — verified 13 modules cached vs only 6 imported directly, i.e. three/addons pulls transitive
+   deps that cannot be hand-enumerated. Precache = app shell only (~0.5MB) so install is fast. Versioned
+   cache (poleshift-v1) + activate cleanup + skipWaiting/claim; bump CACHE_VERSION in sw.js to force an
+   update. Registration is fully guarded (unsupported browser / failure = app runs exactly as before).
+   Install button reveals itself ONLY on beforeinstallprompt and removes itself after install.
+   VERIFIED: SW activates + controls; killed the server outright and the app still loaded from cache with
+   the real terrain and all 85 controls; update-propagation test confirmed a changed build appears
+   immediately (no stale trap); manifest + all icons + start_url resolve; no console errors.
+   Backup: archive/geo.html.pre-pwa-2026-07-30.bak.
  - 2026-07-30: RESPONSIVE SETTINGS DRAWER + published to GitHub Pages. The lil-gui panel is now
    constructed with autoPlace:false into a #gui-drawer container (one control system, two default
    layouts: docked-open on desktop, off-canvas behind a ⚙ gear on phones so the globe is never covered);
@@ -424,6 +439,14 @@
 <title>Pole-Shift Simulator</title>
 <meta name="description" content="An interactive 3D globe that shows the consequences of a crustal-displacement / pole-shift scenario — floods, earthquakes, volcanism and more — with every effect graded by scientific standing. A what-if explorer, not a forecast." />
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ctext y='14' font-size='15'%3E%F0%9F%8C%8D%3C/text%3E%3C/svg%3E" />
+<!-- PWA: installable + offline (manifest/sw registered below). All paths RELATIVE so this works
+     identically on localhost and on the /Geo/ GitHub Pages subpath. -->
+<link rel="manifest" href="./manifest.json" />
+<meta name="theme-color" content="#56c4de" />
+<link rel="apple-touch-icon" href="./icon-192.png" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="Pole Shift" />
 <style>
   :root {
     --bg: #05080d;
@@ -796,6 +819,9 @@
 <div id="friendly-bar">
   <button id="plain-toggle" title="Swap the jargon for plain language">Plain language</button>
   <button id="explain-btn" title="A plain-language explanation of the view">What am I looking at?</button>
+  <!-- PWA install: hidden by default; only revealed if the browser fires beforeinstallprompt
+       (i.e. actually installable and not already installed), and removed again once installed. -->
+  <button id="install-btn" title="Install as an app" style="display:none">⬇ Install</button>
 </div>
 
 <div id="explainer">
@@ -3900,6 +3926,33 @@ if (!_seenIntro) {
   document.getElementById('explainer').style.display = 'block';
   try { localStorage.setItem('geo_seen_intro', '1'); } catch (e) {}
 }
+
+// ---------- PWA: service worker + install prompt (2026-07-30) ----------
+// Registration is fully guarded: unsupported browsers, blocked registration, or a file:// open all
+// just skip it and the app runs exactly as before. See sw.js for the caching strategy (HTML is
+// network-first on purpose, so a pushed update always reaches returning visitors).
+if ('serviceWorker' in navigator) {
+  addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').catch(() => { /* non-fatal: app works without offline support */ });
+  });
+}
+// The install button reveals itself ONLY when the browser says the app is actually installable,
+// and removes itself after install — so it never clutters the UI in any other case.
+let _installPrompt = null;
+const _installBtn = document.getElementById('install-btn');
+addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();                 // keep the mini-infobar from appearing; we offer our own button
+  _installPrompt = e;
+  if (_installBtn) _installBtn.style.display = '';
+});
+if (_installBtn) _installBtn.addEventListener('click', async () => {
+  if (!_installPrompt) return;
+  _installBtn.style.display = 'none';
+  _installPrompt.prompt();
+  try { await _installPrompt.userChoice; } catch (e) {}
+  _installPrompt = null;              // a prompt can only be used once
+});
+addEventListener('appinstalled', () => { _installPrompt = null; if (_installBtn) _installBtn.style.display = 'none'; });
 
 // ---------- RESPONSIVE SETTINGS DRAWER (2026-07-30) ----------
 // One control system, two default layouts: docked-open on desktop (wide), off-canvas behind the ⚙ gear
