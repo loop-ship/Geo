@@ -468,9 +468,12 @@
     max-width: 320px; letter-spacing: 0.08em; text-transform: none;
   }
 
-  /* A1 — scenario preset caption (beside the globe, not overlaid on it) */
+  /* A1/A2 — scenario preset + guided-story caption box (beside the globe, not overlaid on it).
+     Sits BELOW the top-left control stack (title / Simple-Advanced / Plain-language) so the story
+     narration never collides with those buttons. Pushed lower again on mobile to clear the
+     restacked standing-key legend. (Fix 2026-07-30: was top:132px, overlapping mode-switch/friendly-bar.) */
   #scenario {
-    position: fixed; z-index: 3; left: 26px; top: 132px; max-width: 320px;
+    position: fixed; z-index: 4; left: 26px; top: 182px; max-width: 320px;
     display: none; pointer-events: auto;
     background: var(--panel); border: 1px solid var(--edge); border-left-width: 2px;
     border-radius: 4px; padding: 12px 30px 13px 13px; backdrop-filter: blur(8px);
@@ -711,6 +714,8 @@
     #standing-key {
       left: 26px; top: 172px; transform: none; flex-wrap: wrap; gap: 8px 12px; max-width: calc(100vw - 52px);
     }
+    /* mobile: push the story/scenario caption below the (now taller, restacked) standing-key legend */
+    #scenario { top: 226px; max-width: calc(100vw - 52px); }
   }
 
   /* Stage 5 — model caveats / honesty panel */
