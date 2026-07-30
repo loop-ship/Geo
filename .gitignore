@@ -1,0 +1,16 @@
+# --- Large non-runtime directories (must NOT be published to GitHub Pages) ---
+# build/  = data-generator scripts + their raw source inputs, incl. the 466MB ETOPO GeoTIFF.
+# archive/ = backup snapshots + the original zips (ALL.zip ~535MB). Both are kept locally as
+# project/dev material but would blow GitHub's 1GB-site / 100MB-file limits and bloat the repo.
+build/
+archive/
+
+# The app only ever loads geo.html + these 5 siblings at runtime; everything committed should be
+# the deployable static site (geo.html, index.html, the 5 assets, research/ docs, README).
+
+# --- OS / editor cruft ---
+Thumbs.db
+Desktop.ini
+.DS_Store
+*.swp
+*~
