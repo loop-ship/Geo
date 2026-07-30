@@ -57,6 +57,18 @@
    startup now); ECDO preset regression clean. NOTE: could not get a trustworthy FPS delta from the
    automation environment — the test tab reported document.hidden=true, so Chrome throttled the render
    loop; a real FPS check must be done on a focused desktop tab (user action).
+ - 2026-07-30: RESPONSIVE SETTINGS DRAWER + published to GitHub Pages. The lil-gui panel is now
+   constructed with autoPlace:false into a #gui-drawer container (one control system, two default
+   layouts: docked-open on desktop, off-canvas behind a ⚙ gear on phones so the globe is never covered);
+   setDrawerOpen() toggles body.drawer-open via the gear / backdrop-tap / Esc, with a matchMedia(900px)
+   default and a dim backdrop below the dock breakpoint. Top-bar overlap fixed: retired the #stage-badge
+   dev relic (freed the top-right for the gear) and, on mobile, restacked #standing-key left-aligned so it
+   no longer center-collides with the title/gear. Also: Simple mode is now the DEFAULT view (setUIMode(true)
+   at init) with the explainer auto-showing once (localStorage geo_seen_intro); index.html redirect + README
+   + real <title>/description/favicon added for hosting. Browser-verified at desktop AND 390px phone widths
+   (docked/collapse desktop; drawer overlay + backdrop + all close paths mobile; no overlap; no console
+   errors). Live at https://loop-ship.github.io/Geo/ (public repo loop-ship/Geo; build/ + archive/ gitignored).
+   Backup: archive/geo.html.pre-drawer-2026-07-30.bak.
  - 2026-07-30: E18–E21 REAL-BROWSER QA (clears the long-standing "never rendered" flag). Drove every driver/
    cinematic toggle live and checked state + console: E18 body → correct tidal ΔCFS readout (1.31e-3 MPa, 13%
    of threshold — the honest below-threshold reductio, math matches the Moon-at-1-LD anchor); E19 storm/
@@ -400,9 +412,9 @@
    this ordering so seismicity still bumps before the shift. The narrative is honest: driver visibly falls short,
    the shift is the premise.
  ------------------------------------------------------------
- LAST UPDATED: 2026-07-30 (code-condense + drag-to-pole on 2026-07-29, then a performance pass — see the
-   two newest BUILD STATUS entries above and research/CHANGELOG.md for full detail. The changelog holds the
-   dated session-by-session history; BUILD STATUS carries the current-state summary a fresh session needs).
+ LAST UPDATED: 2026-07-30 (published to GitHub Pages + responsive settings drawer + Simple-mode default;
+   before that: E18–E21 browser QA, code-condense/drag-to-pole, and a perf pass. See the newest BUILD STATUS
+   entries above and research/CHANGELOG.md. BUILD STATUS carries the current-state summary a fresh session needs).
 ============================================================
 -->
 <html lang="en">
@@ -526,8 +538,12 @@
   #readout .frame-cyan { color: var(--cyan); }
   #readout .frame-amber { color: var(--amber); }
 
-  #stage-badge {
-    top: 24px; right: 26px;
+  /* #stage-badge retired 2026-07-30 — a build-status relic ("STAGE 6 / Polish · Complete") with no
+     user value; hidden so the top-right corner is free for the ⚙ controls gear. Kept in the DOM
+     (harmless) rather than deleted. */
+  #stage-badge { display: none; }
+  #stage-badge.dev-show {
+    display: block; top: 24px; right: 26px;
     text-align: right; color: var(--ink-dim); font-size: 10px; line-height: 1.6;
   }
   #stage-badge .now {
@@ -641,14 +657,60 @@
   }
   #explainer #explain-close:hover { color: var(--cyan); border-color: var(--cyan); }
 
-  /* Stage 6 polish: keep the control panel clear of the stage badge and scrollable when tall */
-  .lil-gui.root.autoPlace { top: 60px; max-height: calc(100vh - 78px); overflow-y: auto; }
+  /* RESPONSIVE SETTINGS DRAWER (2026-07-30) — the lil-gui panel lives INSIDE #gui-drawer.
+     Docked-open on desktop (today's look), off-canvas behind the ⚙ gear on phones. */
+  #gui-drawer {
+    position: fixed; z-index: 6; top: 0; right: 0; height: 100vh;
+    width: min(320px, 88vw); display: flex; flex-direction: column;
+    background: var(--panel); border-left: 1px solid var(--edge); backdrop-filter: blur(10px);
+    box-shadow: -12px 0 40px rgba(0,0,0,0.45);
+    transform: translateX(100%); transition: transform 0.28s cubic-bezier(0.4,0,0.2,1);
+  }
+  body.drawer-open #gui-drawer { transform: translateX(0); }
+  #gui-drawer-head {
+    flex: 0 0 auto; display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 12px 10px 16px; border-bottom: 1px solid var(--edge);
+    font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-dim);
+  }
+  #gui-drawer-close {
+    width: 26px; height: 26px; cursor: pointer; background: transparent;
+    border: 1px solid var(--edge); border-radius: 4px; color: var(--ink-dim); font-size: 16px; line-height: 1;
+  }
+  #gui-drawer-close:hover { color: var(--cyan); border-color: var(--cyan); }
+  /* the persistent ⚙ gear is the universal open/close toggle (top-right, both breakpoints), so the
+     in-drawer × is redundant AND geometrically overlaps the gear — hide it; closing is gear/backdrop/Esc. */
+  #gui-drawer-close { display: none; }
+  #gui-drawer-body { flex: 1 1 auto; overflow-y: auto; overflow-x: hidden; }
+  /* the panel fills its container instead of floating */
+  #gui-drawer-body .lil-gui.root { width: 100%; max-height: none; }
+  /* ⚙ gear toggle (top-right, where the retired stage badge was) */
+  #gui-toggle {
+    position: fixed; z-index: 7; top: 20px; right: 20px; width: 40px; height: 40px;
+    display: flex; align-items: center; justify-content: center; cursor: pointer;
+    background: var(--panel); border: 1px solid var(--edge); border-radius: 8px;
+    color: var(--cyan); font-size: 19px; line-height: 1; backdrop-filter: blur(8px);
+  }
+  #gui-toggle:hover { border-color: var(--cyan); }
+  body.drawer-open #gui-toggle { color: #05080d; background: var(--cyan); }
+  /* dim backdrop — only when the drawer is an overlay (mobile) */
+  #gui-backdrop {
+    position: fixed; z-index: 5; inset: 0; background: rgba(3,6,11,0.55);
+    opacity: 0; pointer-events: none; transition: opacity 0.28s ease;
+  }
+  body.ui-hidden #gui-toggle, body.ui-hidden #gui-drawer, body.ui-hidden #gui-backdrop { display: none !important; }
+  /* below the desktop dock breakpoint the drawer OVERLAYS, so dim the page behind it when open
+     (matches the 900px matchMedia that sets the open/closed default in JS) */
+  @media (max-width: 899px) { body.drawer-open #gui-backdrop { opacity: 1; pointer-events: auto; } }
+
   @media (max-width: 760px) {
     #title .tag { display: none; }
     #readout { font-size: 9px; }
     #legend, #legend2 { gap: 8px; }
-    .lil-gui.root.autoPlace { top: 52px; }
     #disclosure { padding: 20px 18px; font-size: 12px; }
+    /* mobile: standing-key stops center-colliding with the title/gear — restack it left, below the friendly bar */
+    #standing-key {
+      left: 26px; top: 172px; transform: none; flex-wrap: wrap; gap: 8px 12px; max-width: calc(100vw - 52px);
+    }
   }
 
   /* Stage 5 — model caveats / honesty panel */
@@ -685,6 +747,16 @@
 <body>
 <div id="app"></div>
 <div id="vignette"></div>
+
+<!-- RESPONSIVE SETTINGS DRAWER (2026-07-30): the lil-gui control panel renders INSIDE #gui-drawer-body
+     (constructed with autoPlace:false + container). Docked-open on desktop, off-canvas behind the ⚙ gear
+     on phones so the globe is never covered. Same one control system on both — see setDrawerOpen(). -->
+<button id="gui-toggle" aria-label="Toggle controls" title="Controls">⚙</button>
+<div id="gui-backdrop"></div>
+<div id="gui-drawer">
+  <div id="gui-drawer-head"><span>Controls</span><button id="gui-drawer-close" aria-label="Close controls">×</button></div>
+  <div id="gui-drawer-body"></div>
+</div>
 
 <div id="title" class="hud">
   <h1>POLE-SHIFT SIMULATOR</h1>
@@ -1775,7 +1847,10 @@ const SCENARIOS = [
     caption: "A ~90.8° shift to the Gulf of Guinea, from the Zacharias / GEOSYNC model (@zachariaspro, geosyncmonitor.com). Unlike ECDO, Zacharias argues from live IERS polar-motion data that the Chandler wobble is collapsing and reads that as a TPW precursor — an observational method, not a causal story. The wobble collapse is real and still holding as of 2026, but Jeon et al. 2025 (GRL) tie it to a mundane 2010–2011 mass-redistribution event rather than an approaching shift. Coordinates are sourced via secondary aggregation (Sunfellow's index + a screenshot of the live tool) since geosyncmonitor.com is an un-crawlable JS app — not independently fetched. The pole is arbitrary either way — the engine is cause-agnostic." },
 ];
 
-const gui = new GUI({ title: 'KINEMATIC CORE' });
+// RESPONSIVE DRAWER (2026-07-30): render the panel INSIDE #gui-drawer-body instead of auto-floating
+// top-right. autoPlace:false + container is the sanctioned lil-gui relocation; every downstream ref
+// (addFolder, walkControllers, applyStandingBadges, _advFolders/_simpleOpen, setUIMode) is unchanged.
+const gui = new GUI({ title: 'KINEMATIC CORE', autoPlace: false, container: document.getElementById('gui-drawer-body') });
 // SCENARIOS folder sits at the TOP of the panel (created first). Buttons call applyPreset (defined below).
 const scenarioFolder = gui.addFolder('SCENARIOS (presets)');
 SCENARIOS.forEach(p => scenarioFolder.add({ go: () => applyPreset(p) }, 'go').name('▸ ' + p.label));
@@ -3792,6 +3867,25 @@ if (!_seenIntro) {
   document.getElementById('explainer').style.display = 'block';
   try { localStorage.setItem('geo_seen_intro', '1'); } catch (e) {}
 }
+
+// ---------- RESPONSIVE SETTINGS DRAWER (2026-07-30) ----------
+// One control system, two default layouts: docked-open on desktop (wide), off-canvas behind the ⚙ gear
+// on phones (globe never covered). The gear toggles; backdrop-tap / Esc / × close. Nothing about the
+// controls themselves changes — this only shows/hides the container they live in.
+const _drawerWide = window.matchMedia('(min-width: 900px)');
+function setDrawerOpen(open) {
+  document.body.classList.toggle('drawer-open', open);
+  const t = document.getElementById('gui-toggle');
+  if (t) t.setAttribute('aria-expanded', open ? 'true' : 'false');
+}
+document.getElementById('gui-toggle').addEventListener('click', () => setDrawerOpen(!document.body.classList.contains('drawer-open')));
+document.getElementById('gui-drawer-close').addEventListener('click', () => setDrawerOpen(false));
+document.getElementById('gui-backdrop').addEventListener('click', () => setDrawerOpen(false));
+addEventListener('keydown', (e) => { if (e.key === 'Escape' && document.body.classList.contains('drawer-open')) setDrawerOpen(false); });
+// When the viewport crosses the desktop/mobile boundary, re-apply the sensible default for that width
+// (open on desktop, closed on mobile) so a resize never leaves it in a broken state.
+_drawerWide.addEventListener('change', (e) => setDrawerOpen(e.matches));
+setDrawerOpen(_drawerWide.matches);   // initial default: open on desktop, closed on phone
 
 // ---------- render loop ----------
 const clock = new THREE.Clock();
