@@ -194,42 +194,21 @@ published etc. for everything. Is Zacharias really the good name for that? Ben D
 overlap?"* Follow the working agreement: **research outward, produce a plan, get it revised, then
 ship.** Do not start rewriting captions or presets before the plan is agreed.
 
-### What the project already establishes (read before researching — don't redo this)
-`RESEARCH_2_zacharias_ecdo_landscape.md` is the deepest source; `RESEARCH_1` §7 has the landscape;
-`RESEARCH_6_premise_audit.md` is the last accuracy pass (2026-07-28).
+**RESEARCH IS DONE — see `research/RESEARCH_7_theory_audit.md`.** It carries the findings, a phased
+plan, and the sources. Read it before touching any caption. Headlines:
 
-- **ECDO** = *Exothermic Core-Mantle Decoupling – Dzhanibekov Oscillation*, attributed throughout our
-  docs to **"The Ethical Skeptic" (@EthicalSkeptic), a pseudonym**. ~104° along the 31°E meridian to
-  ~14°S/31°E (Zambia). `ECDOview` (ecdoview.com) is the competing tool — 69 reference sites.
-- **Zacharias** = **@zachariaspro / geosyncmonitor.com** ("GEOSYNC // Earth Orientation Monitor").
-  Observational/geodetic, IERS-data-driven, Chandler-Wobble-collapse → TPW. Distinct from ECDO in
-  *method and destination* (~0.8°S, ~2°E, Gulf of Guinea, ~90–91°) while agreeing on the end state.
-  RESEARCH_2 explicitly corrected an earlier **Zacharias ↔ Zecharia Sitchin name-conflation** — there
-  is no Sitchin lineage. A stale "attribution unverified" caption was also fixed on 2026-07-28.
-- **Ben Davidson** (@SunWeatherMan, Suspicious0bservers) is in `RESEARCH_1` §5 only for the **solar
-  micronova**, which is refuted as stated (a micronova is a white-dwarf binary phenomenon; the Sun is
-  main-sequence with no companion). The legitimate adjacent science is superflares on Sun-like stars
-  and Miyake events (774/775 CE).
-
-### The four questions to answer, in priority order
-1. **Is "The Ethical Skeptic" actually Roger Cunningham?** *Nothing in our research says so* — every
-   ECDO reference we hold is to the pseudonym. The user asserts the name; it may well be right, but
-   **it must be sourced before it goes anywhere near a user-visible caption**, because misattributing
-   a real, named person is a materially worse error than any of the physics labels. If it can't be
-   sourced to something solid, keep citing the pseudonym and say why.
-2. **Is "Zacharias" the right label?** It is a *handle*, not a person's name (real identity is
-   undisclosed per RESEARCH_2). Consider relabelling the preset to the framework — **"GEOSYNC"** or
-   "Zacharias · GEOSYNC" — which is more accurate, more searchable, and doesn't imply we know who
-   they are. Cheap change: it's a `SCENARIOS` entry + caption.
-3. **Ben Davidson overlap — and a real GAP.** RESEARCH_2 cites a "three different pole locations"
-   post (@EthicalSkeptic / @SunWeatherMan / @Zachariaspro) putting **Davidson's pole in the Bay of
-   Bengal**. The app ships Hapgood, ECDO and Zacharias presets — **there is no Davidson preset**, so
-   the "three locations" framing is incomplete. Adding it is a natural, cause-agnostic fit (it's
-   coordinates + a graded caption). His solar-forcing claims also overlap E13/E19, which are already
-   graded contested/speculative — check the caveats don't need a named cross-reference.
-4. **Sweep every other user-visible claim** for the same drift the 2026-07-28 audit found: each
-   `SCENARIOS` caption, every `STANDING_INFO` entry, and each Model Caveats `<li>`. The pattern to
-   look for is a citation that has quietly stopped matching what the layer actually does.
+- **Attribution settled and it is NOT a de-anonymisation.** ECDO is **Roger B. Cunningham**, who
+  publishes under his own name (book *Inversion — ECDO Theory*, April 2026; author-signed copies on
+  his own site; podcasts as "Roger Cunningham aka The Ethical Skeptic"). Cite as
+  **"The Ethical Skeptic (Roger B. Cunningham)"** — pseudonym first, because that is how the work is
+  published and searchable.
+- **Our ECDO coordinates are right.** ECDOview states NP′ as 14°S, 31°E — exactly the preset we ship.
+- **The real gap is Ben Davidson**: Bay of Bengal, ~15°N 90°E (a **75°** shift), micronova +
+  field-collapse mechanism, Chan Thomas lineage. We ship Hapgood/ECDO/Zacharias, so the widely-cited
+  "three different pole locations" framing is currently incomplete by omission.
+- **"Zacharias" is a handle, not a name** — relabel to **"Zacharias · GEOSYNC"**.
+- **Research debt before shipping**: the Chandler-wobble *re-excitation* counter-evidence for the
+  Zacharias caption is not yet firmly sourced. One targeted pull owed. Leads are in RESEARCH_7 §2.3.
 
 ### Constraints that must survive the audit
 - The engine is **cause-agnostic** — it must not endorse any of these. Presets are coordinates plus a
