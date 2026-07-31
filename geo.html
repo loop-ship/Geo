@@ -57,6 +57,14 @@
    startup now); ECDO preset regression clean. NOTE: could not get a trustworthy FPS delta from the
    automation environment — the test tab reported document.hidden=true, so Chrome throttled the render
    loop; a real FPS check must be done on a focused desktop tab (user action).
+ - 2026-07-31: RESPONSIVE OPENING FRAME. The camera FOV is VERTICAL, so at a fixed distance a tall narrow
+   phone crops the globe far tighter than a wide desktop — the fixed 3.44 that frames well on desktop read
+   as "too zoomed" in portrait (user screenshot). The opening distance is now derived from the aspect ratio
+   so the globe fits the SMALLER of the two FOV dimensions with margin: desktop ~3.46 (unchanged in
+   practice), portrait phone ~7.1, tablet ~4.8; clamped to [1.4, 7.6] (maxDistance is 8). Applied at
+   STARTUP ONLY so a deliberate pinch-zoom is never overridden. Math cross-checked in Python and in-page.
+   NOT visually confirmed in portrait here (automation resize wouldn't take and screenshots time out with
+   auto-rotate running) — verify on a real phone.
  - 2026-07-31: FIRST-IMPRESSION DEFAULTS + "TRY THIS" HINTS (user review). (1) Bulge wireframe and
    spin-axis line now default OFF — the cyan wireframe ellipsoid ("the grid like thing") is a technical
    overlay that clutters arrival. This ALSO fixes a bug the approachability pass introduced: those two
@@ -1318,6 +1326,19 @@ if (typeof navigator !== 'undefined' && navigator.gpu && navigator.gpu.requestAd
 // ---------- camera + controls ----------
 const camera = new THREE.PerspectiveCamera(42, window.innerWidth / window.innerHeight, 0.01, 100);
 camera.position.set(2.1, 1.3, 2.4);
+// RESPONSIVE OPENING FRAME (2026-07-31). The camera FOV is VERTICAL, so a tall narrow phone screen crops
+// the globe far tighter than a wide desktop one at the same distance — the fixed 3.44 that frames well on
+// desktop reads as "too zoomed" in portrait. Pull back so the globe fits the SMALLER of the two FOV
+// dimensions with margin: desktop lands ~3.5 (i.e. unchanged), portrait phone ~7. Startup only — we never
+// yank the camera afterwards, so a deliberate pinch-zoom is never overridden.
+(function frameGlobe() {
+  const aspect = window.innerWidth / Math.max(1, window.innerHeight);
+  const vFov = THREE.MathUtils.degToRad(camera.fov);
+  const hFov = 2 * Math.atan(Math.tan(vFov / 2) * aspect);
+  const limit = Math.min(vFov, hFov);                 // whichever dimension clips first
+  const dist = GLOBE_R / Math.sin(Math.max(0.05, 0.80 * limit / 2));   // 0.80 = leave a comfortable margin
+  camera.position.setLength(THREE.MathUtils.clamp(dist, 1.4, 7.6));
+})();
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 controls.dampingFactor = 0.06;
