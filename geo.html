@@ -57,6 +57,23 @@
    startup now); ECDO preset regression clean. NOTE: could not get a trustworthy FPS delta from the
    automation environment — the test tab reported document.hidden=true, so Chrome throttled the render
    loop; a real FPS check must be done on a focused desktop tab (user action).
+ - 2026-07-30: SHAREABLE VIEW LINKS. A '🔗 Copy link to this view' control in Scenarios encodes the current
+   scenario into the URL; opening that link reproduces the view exactly. THREE deliberate design choices,
+   documented at the code block — do not "simplify" them away: (1) HASH fragment, not a query string — a
+   hash never reaches the server, works on static hosting, and does NOT fragment the service worker's HTML
+   cache the way ?params would; (2) only values DIFFERING FROM DEFAULT are encoded, so real links stay
+   short (a full-chain ECDO link is 191 chars), old links can't be broken by adding params later, and the
+   result is human-readable (#lat=-14&lon=31&cli=1&fx=+dynamicTrigger,+giaRebound,…); (3) restore goes
+   through the SAME setters the GUI/presets use (updateShift / setShiftProgress / setBulgeRigidity /
+   applyQuality / computeEffects), never by poking uniforms, so a link can't drift from what the UI would
+   produce. Sharing uses navigator.share on mobile (native sheet) and clipboard elsewhere, with an inline
+   toast showing the raw URL if the clipboard is blocked. Arriving via a link suppresses the first-run
+   explainer (you came for the view, not onboarding). LANDMINE FIXED IN BUILD: the defaults snapshot must
+   stay LAZY (shareDefaults()) — the block sits above the cineParams/detailParams declarations and an eager
+   const there is a temporal-dead-zone ReferenceError that aborts the entire module. VERIFIED: generated a
+   link from a full-chain ECDO state, loaded it fresh, and all five readouts matched EXACTLY (1,031 quakes /
+   505 solar / 186 LOD / 104.0° / −14°,31°); plain no-hash load unchanged; no console errors.
+   Backup: archive/geo.html.pre-sharelinks-2026-07-30.bak.
  - 2026-07-30: iOS / SAFARI HARDENING (code-side; REAL-DEVICE TESTING STILL OWED — see REMAINING).
    Fixed four documented iOS-PWA breakages found by audit, none of which affect desktop (env() = 0 there,
    verified: title still 22/26px, drawer height == viewport). (1) Added **viewport-fit=cover** — without it
@@ -135,13 +152,11 @@
    (render loop was throttled by document.hidden in the automation tab; state + error-surface QA is solid, pixel-
    level cinematic aesthetics best confirmed on a focused desktop tab).
  REMAINING (non-blocking — not yet done):
- - REAL-DEVICE iOS TEST (owed — the 2026-07-30 iOS fixes are code-audit-driven and verified only on desktop
-   Chrome; no iPhone was available to this session). Check on an actual iPhone: (a) Safari shows the Install
-   hint and Share → Add to Home Screen works; (b) once installed it opens fullscreen with the globe icon;
-   (c) nothing sits under the notch/Dynamic Island in portrait OR landscape; (d) the transport bar clears the
-   home indicator; (e) one-finger orbit / two-finger zoom feel right on glass; (f) offline works after a
-   first load. NOTE: iOS may evict service-worker caches after ~7 days of inactivity — that is Apple's
-   behaviour, not a bug here.
+ - REAL-DEVICE iOS TEST — PARTIALLY CONFIRMED 2026-07-30 by the user: (a) Add to Home Screen works and
+   (b) the installed app opens correctly. STILL UNCONFIRMED on a real iPhone: (c) nothing sits under the
+   notch/Dynamic Island in portrait OR landscape; (d) the transport bar clears the home indicator;
+   (e) one-finger orbit / two-finger zoom feel right on glass; (f) offline works after a first load.
+   NOTE: iOS may evict service-worker caches after ~7 days of inactivity — Apple's behaviour, not a bug.
  - FPS confirmation on a real focused desktop tab (the perf pass shipped but its speed impact is unmeasured
    here — the automation tab is throttled by document.hidden; see the 2026-07-29/30 note).
  - computeEffects() function-split: ATTEMPTED AND DELIBERATELY ABANDONED 2026-07-30 — do not naively retry.
@@ -725,6 +740,14 @@
     background: var(--panel); border: 1px solid var(--cyan); border-radius: 8px;
     backdrop-filter: blur(10px); padding: 14px 16px; color: var(--ink);
     font-size: 12px; line-height: 1.7; box-shadow: 0 16px 50px rgba(0,0,0,0.55);
+  }
+  #share-toast {
+    display: none; position: fixed; z-index: 12; left: 50%; transform: translateX(-50%);
+    bottom: calc(90px + env(safe-area-inset-bottom, 0px)); max-width: min(560px, 92vw);
+    background: var(--panel); border: 1px solid var(--cyan); border-radius: 8px;
+    backdrop-filter: blur(10px); padding: 10px 16px; color: var(--ink);
+    font-size: 11.5px; letter-spacing: 0.04em; word-break: break-all; text-align: center;
+    box-shadow: 0 14px 44px rgba(0,0,0,0.5);
   }
   #ios-install-tip b { color: var(--cyan); }
   #ios-install-tip .dim { color: var(--ink-dim); font-size: 11px; }
@@ -1994,6 +2017,7 @@ const gui = new GUI({ title: 'Controls', autoPlace: false, container: document.g
 const scenarioFolder = gui.addFolder('Scenarios');
 SCENARIOS.forEach(p => scenarioFolder.add({ go: () => applyPreset(p) }, 'go').name('▸ ' + p.label));
 scenarioFolder.add({ clear: () => hideScenario() }, 'clear').name('Clear caption (keep state)');
+scenarioFolder.add({ share: () => shareCurrentView() }, 'share').name('🔗 Copy link to this view');
 scenarioFolder.open();
 // A2 — guided story entry point (transport is the bottom bar; startStory defined below, hoisted).
 const storyFolder = gui.addFolder('Guided story');
@@ -3178,6 +3202,125 @@ function applyPreset(p) {
 }
 
 // ============================================================
+//  SHAREABLE VIEW LINKS (2026-07-30). Encodes the current scenario into the URL so a configured view can
+//  be sent to someone and opens exactly as you left it.
+//  DESIGN NOTES (deliberate, don't "simplify" these away):
+//   • HASH fragment, not a query string — a hash never reaches the server, works on static hosting, and
+//     (important here) does NOT fragment the service worker's HTML cache the way ?params would.
+//   • Only values that DIFFER FROM DEFAULT are encoded. Real links stay short, adding new params later
+//     can't break old links, and the result is human-readable/debuggable.
+//   • Restoring goes through the SAME setters the GUI and presets use (updateShift / setBulgeRigidity /
+//     computeEffects / applyQuality) — never by poking uniforms directly — so a shared link can't drift
+//     from what the UI would have produced.
+// ============================================================
+const SHARE_LAYER_KEYS = ['showStressOverlay','showEarthquakes','showVolcanoes','stressWeighted','gateToFaults',
+  'dynamicTrigger','antipodalBonus','deepPreference','lodModulation','deglaciationMult','giaRebound',
+  'solarCoupling','eqVolcCascade','faultStyle','flankCollapse'];
+// Defaults are snapshotted LAZILY on first use, not at module-eval time: this block sits above the
+// cineParams/detailParams declarations, and touching a `const` before its initializer runs is a
+// temporal-dead-zone ReferenceError that aborts the whole module. (Learned the hard way — don't
+// convert this back into an eager const.) First call happens post-load, when everything exists.
+let SHARE_DEFAULTS = null, SHARE_LAYER_DEFAULTS = null;
+function shareDefaults() {
+  if (!SHARE_DEFAULTS) {
+    SHARE_DEFAULTS = {
+      lat: 90, lon: 0, sp: 1, rig: 1.0, sea: 0,
+      det: 'Medium', cli: 0, q: 'off',
+    };
+    SHARE_LAYER_DEFAULTS = {
+      showStressOverlay:false, showEarthquakes:true, showVolcanoes:true, stressWeighted:true,
+      gateToFaults:false, dynamicTrigger:false, antipodalBonus:false, deepPreference:false,
+      lodModulation:false, deglaciationMult:false, giaRebound:false, solarCoupling:false,
+      eqVolcCascade:false, faultStyle:false, flankCollapse:false,
+    };
+  }
+  return SHARE_DEFAULTS;
+}
+
+function buildShareURL() {
+  const D = shareDefaults();
+  const p = new URLSearchParams();
+  const put = (k, v, d) => { if (String(v) !== String(d)) p.set(k, v); };
+  put('lat', +shiftParams.newPoleLat.toFixed(2), D.lat);
+  put('lon', +shiftParams.newPoleLon.toFixed(2), D.lon);
+  put('sp',  +shiftParams.shiftProgress.toFixed(3), D.sp);
+  put('rig', +waterParams.bulgeRigidity.toFixed(3), D.rig);
+  put('sea', waterParams.seaLevel, D.sea);
+  put('det', detailParams.detail, D.det);
+  put('cli', climateParams.showClimate ? 1 : 0, D.cli);
+  put('q',   cineParams.quality, D.q);
+  // layers: list only the ones flipped away from their default, as +on / -off
+  const flipped = SHARE_LAYER_KEYS.filter(k => effectsParams[k] !== SHARE_LAYER_DEFAULTS[k])
+    .map(k => (effectsParams[k] ? '+' : '-') + k);
+  if (flipped.length) p.set('fx', flipped.join(','));
+  const qs = p.toString();
+  return location.origin + location.pathname + (qs ? '#' + qs : '');
+}
+
+function applySharedView(hash) {
+  const raw = (hash || '').replace(/^#/, '');
+  if (!raw) return false;
+  let p; try { p = new URLSearchParams(raw); } catch (e) { return false; }
+  if (![...p.keys()].length) return false;
+  const D = shareDefaults();
+  const num = (k, d) => { const v = parseFloat(p.get(k)); return Number.isFinite(v) ? v : d; };
+  // pole + shift (snap, don't animate — a shared link should land on the view immediately)
+  const prevAnim = shiftParams.animateShift;
+  shiftParams.animateShift = false;
+  shiftParams.newPoleLat = num('lat', D.lat);
+  shiftParams.newPoleLon = num('lon', D.lon);
+  updateShift();
+  if (p.has('sp')) setShiftProgress(num('sp', D.sp));
+  shiftParams.animateShift = prevAnim;
+  // water
+  if (p.has('rig')) setBulgeRigidity(num('rig', D.rig));
+  if (p.has('sea')) { waterParams.seaLevel = num('sea', D.sea); uniforms.uSeaLevel.value = waterParams.seaLevel; }
+  // marker detail
+  if (p.has('det') && DETAIL_SITES[p.get('det')]) {
+    detailParams.detail = p.get('det');
+    effectsParams.siteDensity = DETAIL_SITES[detailParams.detail];
+  }
+  // effect layers
+  if (p.has('fx')) p.get('fx').split(',').forEach(tok => {
+    const on = tok[0] === '+', k = tok.slice(1);
+    if (SHARE_LAYER_KEYS.includes(k)) effectsParams[k] = on;
+  });
+  uniforms.uShowStress.value = effectsParams.showStressOverlay ? 1.0 : 0.0;
+  // climate + cinematic quality
+  if (p.has('cli')) { climateParams.showClimate = p.get('cli') === '1'; uniforms.uShowClimate.value = climateParams.showClimate ? 1.0 : 0.0; }
+  if (p.has('q') && ['off','medium','cinema'].includes(p.get('q'))) { cineParams.quality = p.get('q'); applyQuality(); }
+  walkControllers(gui, c => c.updateDisplay && c.updateDisplay());
+  computeEffects();
+  return true;
+}
+
+// Share action: native share sheet on mobile (it's the expected affordance there), clipboard elsewhere.
+async function shareCurrentView() {
+  const url = buildShareURL();
+  const title = 'Pole-Shift Simulator';
+  try {
+    if (navigator.share && /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent)) {
+      await navigator.share({ title, text: 'A pole-shift scenario', url });
+      return;
+    }
+    await navigator.clipboard.writeText(url);
+    toastShare('Link copied to clipboard');
+  } catch (e) {
+    // clipboard blocked (permissions/insecure context) — show the URL so it can still be copied by hand
+    toastShare(url, true);
+  }
+}
+function toastShare(msg, selectable) {
+  let t = document.getElementById('share-toast');
+  if (!t) { t = document.createElement('div'); t.id = 'share-toast'; document.body.appendChild(t); }
+  t.textContent = msg;
+  t.style.userSelect = selectable ? 'all' : 'none';
+  t.style.display = 'block';
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => { t.style.display = 'none'; }, selectable ? 12000 : 2600);
+}
+
+// ============================================================
 //  A2 — STORY / GUIDED-NARRATIVE MODE. One master clock T∈[0,1]. The existing animations become PURE
 //  functions of T (shiftProgress over shiftWindow, bulge relaxation over bulgeWindow), so the scrubber is
 //  lossless in both directions — nothing accumulates. Each step is a keyframe range on T carrying a caption,
@@ -4047,6 +4190,11 @@ document.getElementById('explain-close').addEventListener('click', () => {
 let _seenIntro = false;
 try { _seenIntro = localStorage.getItem('geo_seen_intro') === '1'; } catch (e) {}
 setUIMode(true);
+// A shared link restores its scenario on load. Done AFTER setUIMode so the GUI exists to be refreshed,
+// and it suppresses the first-run explainer — someone arriving via a link wants the view, not onboarding.
+let _fromSharedLink = false;
+try { _fromSharedLink = applySharedView(location.hash); } catch (e) { /* malformed link: fall back to a normal load */ }
+if (_fromSharedLink) _seenIntro = true;
 if (!_seenIntro) {
   document.getElementById('explainer').style.display = 'block';
   try { localStorage.setItem('geo_seen_intro', '1'); } catch (e) {}
