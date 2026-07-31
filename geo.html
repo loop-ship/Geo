@@ -100,8 +100,21 @@
  REMAINING (non-blocking — not yet done):
  - FPS confirmation on a real focused desktop tab (the perf pass shipped but its speed impact is unmeasured
    here — the automation tab is throttled by document.hidden; see the 2026-07-29/30 note).
- - Deferred code refactors, now UN-blocked by the QA above (regressions would be catchable): computeEffects()
-   function-split (shared-state risk), E18–E21 internal cleanup. Possible future perf: shader branchless
+ - computeEffects() function-split: ATTEMPTED AND DELIBERATELY ABANDONED 2026-07-30 — do not naively retry.
+   A numeric baseline was captured first (ECDO preset, 104° shift, Full-chain bundle: quakes 2,207 / volc 62 /
+   trig 46 / lod 385 / deglac ×30.0 / gia 0 / solar 1,066 / casc 0 / tsu 2 / style 1,159-934-114 — reuse this
+   as the regression oracle if anyone does retry). The extraction itself is mechanical (each layer block can
+   become renderXLayer(cx, ...) with the body kept character-identical via destructuring at the top), BUT:
+   (a) it needs ~8 block extractions × 2 edits each on a working 4k-line single file with no automated tests,
+   (b) the ONLY verification path is a browser round-trip that takes 45s+ per state change here (background-tab
+   CPU throttling; note the app's own scheduleEffects debounce and any rAF/setTimeout also stall in a hidden
+   tab, so test harnesses must avoid awaits and use a control whose onChange calls computeEffects directly),
+   and (c) the payoff is purely internal readability with ZERO user-visible benefit. Reverted to the committed
+   state after one trial extraction. Verdict: not worth the regression risk on a live, verified app. Revisit
+   only alongside a real automated test harness, or if the function needs substantive editing anyway.
+ - E18–E21 internal cleanup: same reasoning; the code is verified-working and non-duplicated (it is genuinely
+   complex, not copy-paste), so there is no mechanical win available there either.
+ - Possible future perf (only if ever needed; FPS confirmed good by the user 2026-07-30): shader branchless
    rewrite + KTX2/Basis texture compression (needs external tooling).
  - Parked product threads (raised, not started): Simple mode as the DEFAULT for new visitors; deployment /
    GitHub Pages / PWA packaging.
