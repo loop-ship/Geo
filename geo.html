@@ -57,6 +57,19 @@
    startup now); ECDO preset regression clean. NOTE: could not get a trustworthy FPS delta from the
    automation environment — the test tab reported document.hidden=true, so Chrome throttled the render
    loop; a real FPS check must be done on a focused desktop tab (user action).
+ - 2026-07-30: iOS / SAFARI HARDENING (code-side; REAL-DEVICE TESTING STILL OWED — see REMAINING).
+   Fixed four documented iOS-PWA breakages found by audit, none of which affect desktop (env() = 0 there,
+   verified: title still 22/26px, drawer height == viewport). (1) Added **viewport-fit=cover** — without it
+   EVERY env(safe-area-inset-*) silently resolves to 0px AND Safari letterboxes the page in landscape.
+   (2) Inset all 13 screen-edge-anchored fixed elements by env(safe-area-inset-*) so the title/gear/legend
+   clear the notch + Dynamic Island and the transport bar/readout clear the home indicator; the gear also
+   got a 20px→24px top buffer for the landscape top touch dead-zone Apple does NOT report via the inset.
+   (3) Drawer height 100vh → 100dvh (with vh fallback): 100vh is wrong on iOS because it ignores the
+   address bar. (4) iOS never fires beforeinstallprompt, so the Install button was invisible on iPhone with
+   no way to discover installation — added a Safari-on-iOS-only inline hint (Share → Add to Home Screen),
+   suppressed once dismissed and when already running standalone. Deliberately an inline panel, NOT
+   alert(), which blocks the page and reads as unpolished.
+   Backup: archive/geo.html.pre-ios-2026-07-30.bak.
  - 2026-07-30: APPROACHABILITY PASS (first user review batch). FOUR changes, none of which touch physics,
    layer behaviour, or the underlying grading of any claim — only what is EXPOSED BY DEFAULT and what the
    labels SAY. (1) TERMINOLOGY: the displayed standing words are now established / DEBATED / UNVERIFIED,
@@ -122,6 +135,13 @@
    (render loop was throttled by document.hidden in the automation tab; state + error-surface QA is solid, pixel-
    level cinematic aesthetics best confirmed on a focused desktop tab).
  REMAINING (non-blocking — not yet done):
+ - REAL-DEVICE iOS TEST (owed — the 2026-07-30 iOS fixes are code-audit-driven and verified only on desktop
+   Chrome; no iPhone was available to this session). Check on an actual iPhone: (a) Safari shows the Install
+   hint and Share → Add to Home Screen works; (b) once installed it opens fullscreen with the globe icon;
+   (c) nothing sits under the notch/Dynamic Island in portrait OR landscape; (d) the transport bar clears the
+   home indicator; (e) one-finger orbit / two-finger zoom feel right on glass; (f) offline works after a
+   first load. NOTE: iOS may evict service-worker caches after ~7 days of inactivity — that is Apple's
+   behaviour, not a bug here.
  - FPS confirmation on a real focused desktop tab (the perf pass shipped but its speed impact is unmeasured
    here — the automation tab is throttled by document.hidden; see the 2026-07-29/30 note).
  - computeEffects() function-split: ATTEMPTED AND DELIBERATELY ABANDONED 2026-07-30 — do not naively retry.
@@ -472,7 +492,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
 <title>Pole-Shift Simulator</title>
 <meta name="description" content="An interactive 3D globe that shows the consequences of a crustal-displacement / pole-shift scenario — floods, earthquakes, volcanism and more — with every effect graded by scientific standing. A what-if explorer, not a forecast." />
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ctext y='14' font-size='15'%3E%F0%9F%8C%8D%3C/text%3E%3C/svg%3E" />
@@ -514,7 +534,7 @@
     font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase;
   }
   #title {
-    top: 22px; left: 26px;
+    top: calc(22px + env(safe-area-inset-top, 0px)); left: calc(26px + env(safe-area-inset-left, 0px));
     border-left: 2px solid var(--cyan);
     padding-left: 12px;
   }
@@ -533,7 +553,7 @@
      narration never collides with those buttons. Pushed lower again on mobile to clear the
      restacked standing-key legend. (Fix 2026-07-30: was top:132px, overlapping mode-switch/friendly-bar.) */
   #scenario {
-    position: fixed; z-index: 4; left: 26px; top: 182px; max-width: 320px;
+    position: fixed; z-index: 4; left: calc(26px + env(safe-area-inset-left, 0px)); top: calc(182px + env(safe-area-inset-top, 0px)); max-width: 320px;
     display: none; pointer-events: auto;
     background: var(--panel); border: 1px solid var(--edge); border-left-width: 2px;
     border-radius: 4px; padding: 12px 30px 13px 13px; backdrop-filter: blur(8px);
@@ -555,14 +575,14 @@
      leaves the top-left and becomes a translucent band centered just ABOVE the transport controls, so the
      globe stays fully visible while you read along. Preset captions (no story) keep the top-left card. */
   body.story-active #scenario {
-    top: auto; bottom: 80px; left: 50%; right: auto; transform: translateX(-50%);
+    top: auto; bottom: calc(80px + env(safe-area-inset-bottom, 0px)); left: 50%; right: auto; transform: translateX(-50%);
     width: min(680px, 94vw); max-width: min(680px, 94vw);
     background: rgba(9, 14, 22, 0.70); border-left-width: 2px;
   }
 
   /* A2 — story transport bar (bottom centre) */
   #story-bar {
-    position: fixed; z-index: 4; left: 50%; bottom: 20px; transform: translateX(-50%);
+    position: fixed; z-index: 4; left: 50%; bottom: calc(20px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%);
     display: none; align-items: center; gap: 10px;
     background: var(--panel); border: 1px solid var(--edge); border-radius: 8px;
     padding: 9px 12px; backdrop-filter: blur(8px);
@@ -584,7 +604,7 @@
     text-align: center; vertical-align: middle; cursor: help; flex: 0 0 auto;
   }
   #standing-key {
-    position: fixed; z-index: 3; left: 50%; top: 16px; transform: translateX(-50%);
+    position: fixed; z-index: 3; left: 50%; top: calc(16px + env(safe-area-inset-top, 0px)); transform: translateX(-50%);
     display: flex; gap: 12px; align-items: center;
     background: var(--panel); border: 1px solid var(--edge); border-radius: 6px;
     padding: 6px 12px; backdrop-filter: blur(8px);
@@ -602,7 +622,7 @@
   }
 
   #readout {
-    bottom: 20px; left: 26px;
+    bottom: calc(20px + env(safe-area-inset-bottom, 0px)); left: calc(26px + env(safe-area-inset-left, 0px));
     color: var(--ink-dim); font-size: 10px; line-height: 1.7;
   }
   #readout b { color: var(--cyan); font-weight: 500; }
@@ -672,7 +692,7 @@
 
   /* FRIENDLY MODE (UX): Simple/Advanced switch + collapsible legend */
   #mode-switch {
-    position: fixed; z-index: 4; top: 104px; left: 26px; display: flex; gap: 0;
+    position: fixed; z-index: 4; top: calc(104px + env(safe-area-inset-top, 0px)); left: calc(26px + env(safe-area-inset-left, 0px)); display: flex; gap: 0;
     border: 1px solid var(--edge); border-radius: 6px; overflow: hidden;
     background: var(--panel); backdrop-filter: blur(8px); width: max-content;
   }
@@ -698,6 +718,21 @@
   }
   #show-all-controls:hover { color: var(--cyan); border-color: var(--cyan); }
   body.simple-mode #show-all-controls { display: block; }
+  /* iOS-only "Add to Home Screen" hint (Safari never fires beforeinstallprompt) */
+  #ios-install-tip {
+    position: fixed; z-index: 12; left: 50%; transform: translateX(-50%);
+    bottom: calc(24px + env(safe-area-inset-bottom, 0px)); width: min(340px, 90vw);
+    background: var(--panel); border: 1px solid var(--cyan); border-radius: 8px;
+    backdrop-filter: blur(10px); padding: 14px 16px; color: var(--ink);
+    font-size: 12px; line-height: 1.7; box-shadow: 0 16px 50px rgba(0,0,0,0.55);
+  }
+  #ios-install-tip b { color: var(--cyan); }
+  #ios-install-tip .dim { color: var(--ink-dim); font-size: 11px; }
+  #ios-install-tip button {
+    display: block; width: 100%; margin-top: 10px; padding: 7px; cursor: pointer;
+    background: var(--cyan); border: none; border-radius: 5px; color: #05080d;
+    font: inherit; font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase;
+  }
   #simple-readout { display: none; font-size: 12px; color: var(--ink); margin-bottom: 2px; line-height: 1.5; }
   #simple-readout b { color: var(--cyan); font-weight: 600; }
   body.simple-mode #simple-readout { display: block; }
@@ -705,7 +740,7 @@
 
   /* FRIENDLY MODE U2: plain-language toggle + "what am I looking at?" explainer */
   #friendly-bar {
-    position: fixed; z-index: 4; top: 138px; left: 26px; display: flex; gap: 6px; pointer-events: auto;
+    position: fixed; z-index: 4; top: calc(138px + env(safe-area-inset-top, 0px)); left: calc(26px + env(safe-area-inset-left, 0px)); display: flex; gap: 6px; pointer-events: auto;
   }
   #friendly-bar button {
     background: var(--panel); border: 1px solid var(--edge); border-radius: 6px; cursor: pointer;
@@ -741,7 +776,7 @@
   /* RESPONSIVE SETTINGS DRAWER (2026-07-30) — the lil-gui panel lives INSIDE #gui-drawer.
      Docked-open on desktop (today's look), off-canvas behind the ⚙ gear on phones. */
   #gui-drawer {
-    position: fixed; z-index: 6; top: 0; right: 0; height: 100vh;
+    position: fixed; z-index: 6; top: 0; right: 0; height: 100vh; height: 100dvh;
     width: min(320px, 88vw); display: flex; flex-direction: column;
     background: var(--panel); border-left: 1px solid var(--edge); backdrop-filter: blur(10px);
     box-shadow: -12px 0 40px rgba(0,0,0,0.45);
@@ -766,7 +801,7 @@
   #gui-drawer-body .lil-gui.root { width: 100%; max-height: none; }
   /* ⚙ gear toggle (top-right, where the retired stage badge was) */
   #gui-toggle {
-    position: fixed; z-index: 7; top: 20px; right: 20px; width: 40px; height: 40px;
+    position: fixed; z-index: 7; top: calc(24px + env(safe-area-inset-top, 0px)); right: calc(20px + env(safe-area-inset-right, 0px)); width: 40px; height: 40px;
     display: flex; align-items: center; justify-content: center; cursor: pointer;
     background: var(--panel); border: 1px solid var(--edge); border-radius: 8px;
     color: var(--cyan); font-size: 19px; line-height: 1; backdrop-filter: blur(8px);
@@ -790,21 +825,21 @@
     #disclosure { padding: 20px 18px; font-size: 12px; }
     /* mobile: standing-key stops center-colliding with the title/gear — restack it left, below the friendly bar */
     #standing-key {
-      left: 26px; top: 172px; transform: none; flex-wrap: wrap; gap: 8px 12px; max-width: calc(100vw - 52px);
+      left: calc(26px + env(safe-area-inset-left, 0px)); top: calc(172px + env(safe-area-inset-top, 0px)); transform: none; flex-wrap: wrap; gap: 8px 12px; max-width: calc(100vw - 52px);
     }
     /* mobile: push the (preset) story/scenario caption clear below the restacked standing-key legend */
-    #scenario { top: 258px; max-width: calc(100vw - 52px); }
+    #scenario { top: calc(258px + env(safe-area-inset-top, 0px)); max-width: calc(100vw - 52px); }
     /* mobile: the transport bar was wider than the screen (240px scrubber + fixed button widths), so the
        Pause button + Step counter got clipped off both edges. Span the viewport with margins and let the
        scrubber flex to fill, so everything fits any phone width. */
-    #story-bar { left: 12px; right: 12px; transform: none; width: auto; gap: 6px; padding: 8px 10px; }
+    #story-bar { left: calc(12px + env(safe-area-inset-left, 0px)); right: calc(12px + env(safe-area-inset-right, 0px)); transform: none; width: auto; gap: 6px; padding: 8px 10px; }
     #story-bar #story-scrub { width: auto; flex: 1 1 40px; min-width: 30px; }
     #story-bar #story-play { min-width: 0; }
     #story-bar #story-step { min-width: 0; font-size: 9px; }
     #story-bar button { padding: 5px 7px; }
     /* mobile: while a story plays, the lower-third band spans the width just above the transport, and the
        numeric readout (redundant with the narration) hides so the bottom stays clean and uncluttered */
-    body.story-active #scenario { bottom: 76px; width: calc(100vw - 24px); max-width: calc(100vw - 24px); }
+    body.story-active #scenario { bottom: calc(76px + env(safe-area-inset-bottom, 0px)); width: calc(100vw - 24px); max-width: calc(100vw - 24px); }
     body.story-active #readout { display: none; }
   }
 
@@ -4043,6 +4078,40 @@ if (_installBtn) _installBtn.addEventListener('click', async () => {
   _installPrompt = null;              // a prompt can only be used once
 });
 addEventListener('appinstalled', () => { _installPrompt = null; if (_installBtn) _installBtn.style.display = 'none'; });
+// iOS NEVER fires beforeinstallprompt (Apple has not implemented it), so the button above stays hidden
+// on iPhone/iPad and the user has no way to discover that this installs. Show an equivalent hint instead,
+// pointing at the manual Share → "Add to Home Screen" flow — but only in Safari on iOS, and only when
+// not already installed (navigator.standalone true = launched from the home screen).
+(function iosInstallHint() {
+  const ua = navigator.userAgent;
+  const isIOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  const isSafari = /Safari/.test(ua) && !/CriOS|FxiOS|EdgiOS/.test(ua);
+  const alreadyInstalled = window.navigator.standalone === true;
+  if (!isIOS || !isSafari || alreadyInstalled || !_installBtn) return;
+  let dismissed = false;
+  try { dismissed = localStorage.getItem('geo_ios_install_hint') === '1'; } catch (e) {}
+  if (dismissed) return;
+  _installBtn.textContent = '⬇ Install';
+  _installBtn.style.display = '';
+  _installBtn.addEventListener('click', () => {
+    // inline hint rather than alert() — a modal dialog would block the page and reads as unpolished
+    let tip = document.getElementById('ios-install-tip');
+    if (!tip) {
+      tip = document.createElement('div');
+      tip.id = 'ios-install-tip';
+      tip.innerHTML = '<b>Add to Home Screen</b><br>1. Tap the Share button <b>□↑</b> in Safari<br>' +
+                      '2. Scroll down, tap <b>Add to Home Screen</b><br>' +
+                      '<span class="dim">It then opens fullscreen with its own icon, and works offline.</span>' +
+                      '<button id="ios-tip-close">Got it</button>';
+      document.body.appendChild(tip);
+      document.getElementById('ios-tip-close').addEventListener('click', () => {
+        tip.remove();
+        try { localStorage.setItem('geo_ios_install_hint', '1'); } catch (e) {}
+        _installBtn.style.display = 'none';
+      });
+    }
+  });
+})();
 
 // ---------- RESPONSIVE SETTINGS DRAWER (2026-07-30) ----------
 // One control system, two default layouts: docked-open on desktop (wide), off-canvas behind the ⚙ gear
