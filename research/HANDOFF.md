@@ -1,8 +1,12 @@
-# HANDOFF — Pole-Shift Simulator (as of 2026-07-31)
+# HANDOFF — Pole-Shift Simulator (as of 2026-07-31b)
 
 Read `geo.html`'s header comment FIRST — it is the source of truth for build state, locked
 decisions, physics constants with provenance, and landmines. This file covers only what that
-header can't: **live status, what's verified vs. assumed, and the regression oracles that matter.**
+header can't: **live status, what's verified vs. assumed, the regression oracles that matter, and
+the active thread.**
+
+**Starting cold? Read §1, then §7 — the theory/attribution audit is the live piece of work, and it
+is a PLANNING task. §2 lists what is owed but unverified.**
 
 ---
 
@@ -16,7 +20,10 @@ accuracy audit, file/doc reorg, Pages deploy, responsive settings drawer, PWA (i
 offline), the approachability pass (neutral terminology, plain-English panels, Simple-mode
 defaults, calmer marker density), iOS/Safari hardening, shareable view links, a drag-to-set-pole
 fix, first-impression defaults + hint chip, a responsive opening camera frame, and **E22 monument
-alignments** (§3) — which closes the last known capability gap.
+alignments** (§3) — which closes the last known capability gap — plus an off-centre opening frame,
+proximity-scaled orbit/zoom sensitivity, and the monument-needle visibility fix (§6).
+
+**Next up: a THEORY / ATTRIBUTION AUDIT — see §7. It is a PLANNING task, not an execution task.**
 
 **Working agreement with the user:** the loop is **review → research → plan → revise → ship**.
 "Research" means look *outward* (comparable tools, current literature, best practice), not re-read
@@ -41,6 +48,14 @@ the old marker baseline exactly (2,207 quakes / 62 volcanoes).
 - Offline on iPhone after a first load (airplane mode).
 - Visual confirmation of the newest defaults (no wireframe, photoreal, auto-rotate) and the new
   portrait camera framing.
+- **The 2026-07-31b visual changes were never seen by anyone**: the off-centre opening frame, the
+  ~8% smaller globe (margin 0.80→0.74), the thicker monument needles, and the close-in orbit/zoom
+  slowdown. Screenshot capture failed on every attempt that session (12+, both tool paths, with
+  auto-rotate already off), so the framing was verified numerically from live DOM rects and the
+  needle fix is arithmetic. **All four want an eyeball on a real focused tab.**
+- **OPEN QUESTION for the user:** keep the globe ~8% smaller, or revert `openingDistance()`'s margin
+  to 0.80? The shrink exists only to leave room for the downward nudge on laptop-sized windows
+  (1536×864: 45px of nudge vs 18px; 1280×720: 24px vs 2px). On 1080p it buys nothing.
 
 **Testing-environment gotchas that will waste your time if you don't know them:**
 - The automation tab is usually **backgrounded** → `document.hidden` is true, so `requestAnimationFrame`
@@ -144,9 +159,103 @@ Simple-mode readout, so any taller readout slid underneath it (now `positionHint
 - **App stores** — don't, until real people are using the web version and asking.
 
 ## 5. Obvious next moves
-1. The owed **iOS/real-device checks** in §2 — now the largest unverified surface.
-2. The **Grok Build** experiment — repo is clean, standard static web code, ready to import; nothing
+1. **The theory / attribution audit — §7. This is the active thread.** PLAN it first.
+2. The owed **iOS/real-device checks** in §2 — the largest unverified surface.
+3. The **Grok Build** experiment — repo is clean, standard static web code, ready to import; nothing
    here needs undoing for it. Untried.
-3. Whatever the user's ongoing review turns up — that loop has caught the most real problems.
+4. Whatever the user's ongoing review turns up — that loop has caught the most real problems.
 
-There is no longer a feature left mid-flight; E22 was the last one.
+No feature is left mid-flight; E22 was the last one.
+
+---
+
+## 6. Shipped 2026-07-31b (three user-review fixes)
+
+- **Monument needles were invisible** ("monuments do not seem to be showing up"). Not a logic fault —
+  every number, toggle, label and colour was already correct. Marker sizes are **world units on a
+  globe of radius 1, which renders ~260 px across at the opening frame**, so the 0.0035 cross-section
+  drew **0.9 px**: sub-pixel geometry renders as *nothing*, not as something faint. Now 0.013
+  (~3.4 px), lengths 0.11/0.17 → 0.17/0.25. **Multiply world units by ~260 before assuming any new
+  marker reads.**
+- **Off-centre opening frame** via `camera.setViewOffset` (off-axis projection — *not* a moved camera
+  or orbit target, so the pivot stays at the globe's centre and raycasting/projected labels follow
+  the projection matrix for free). Horizontal shift = half the drawer dock width, keyed to the 900px
+  **dock** breakpoint and deliberately not to `drawer-open`, so the globe never jumps when the gear is
+  tapped. Vertical nudge clamped by a circle-vs-rectangle clearance test against the readout.
+- **Proximity-scaled sensitivity**: rotate 0.18→0.6 and zoom 0.34→1.0, lerped by altitude above the
+  surface, full speed by distance 2.25 (inside the ~3.7 opening frame, so normal use is unchanged).
+
+---
+
+## 7. NEXT: THEORY / ATTRIBUTION AUDIT — **plan this, don't execute it**
+
+The user's ask: *"revise all the theories — make sure ECDO aligns with what Roger Cunningham
+published etc. for everything. Is Zacharias really the good name for that? Ben Davidson's model
+overlap?"* Follow the working agreement: **research outward, produce a plan, get it revised, then
+ship.** Do not start rewriting captions or presets before the plan is agreed.
+
+### What the project already establishes (read before researching — don't redo this)
+`RESEARCH_2_zacharias_ecdo_landscape.md` is the deepest source; `RESEARCH_1` §7 has the landscape;
+`RESEARCH_6_premise_audit.md` is the last accuracy pass (2026-07-28).
+
+- **ECDO** = *Exothermic Core-Mantle Decoupling – Dzhanibekov Oscillation*, attributed throughout our
+  docs to **"The Ethical Skeptic" (@EthicalSkeptic), a pseudonym**. ~104° along the 31°E meridian to
+  ~14°S/31°E (Zambia). `ECDOview` (ecdoview.com) is the competing tool — 69 reference sites.
+- **Zacharias** = **@zachariaspro / geosyncmonitor.com** ("GEOSYNC // Earth Orientation Monitor").
+  Observational/geodetic, IERS-data-driven, Chandler-Wobble-collapse → TPW. Distinct from ECDO in
+  *method and destination* (~0.8°S, ~2°E, Gulf of Guinea, ~90–91°) while agreeing on the end state.
+  RESEARCH_2 explicitly corrected an earlier **Zacharias ↔ Zecharia Sitchin name-conflation** — there
+  is no Sitchin lineage. A stale "attribution unverified" caption was also fixed on 2026-07-28.
+- **Ben Davidson** (@SunWeatherMan, Suspicious0bservers) is in `RESEARCH_1` §5 only for the **solar
+  micronova**, which is refuted as stated (a micronova is a white-dwarf binary phenomenon; the Sun is
+  main-sequence with no companion). The legitimate adjacent science is superflares on Sun-like stars
+  and Miyake events (774/775 CE).
+
+### The four questions to answer, in priority order
+1. **Is "The Ethical Skeptic" actually Roger Cunningham?** *Nothing in our research says so* — every
+   ECDO reference we hold is to the pseudonym. The user asserts the name; it may well be right, but
+   **it must be sourced before it goes anywhere near a user-visible caption**, because misattributing
+   a real, named person is a materially worse error than any of the physics labels. If it can't be
+   sourced to something solid, keep citing the pseudonym and say why.
+2. **Is "Zacharias" the right label?** It is a *handle*, not a person's name (real identity is
+   undisclosed per RESEARCH_2). Consider relabelling the preset to the framework — **"GEOSYNC"** or
+   "Zacharias · GEOSYNC" — which is more accurate, more searchable, and doesn't imply we know who
+   they are. Cheap change: it's a `SCENARIOS` entry + caption.
+3. **Ben Davidson overlap — and a real GAP.** RESEARCH_2 cites a "three different pole locations"
+   post (@EthicalSkeptic / @SunWeatherMan / @Zachariaspro) putting **Davidson's pole in the Bay of
+   Bengal**. The app ships Hapgood, ECDO and Zacharias presets — **there is no Davidson preset**, so
+   the "three locations" framing is incomplete. Adding it is a natural, cause-agnostic fit (it's
+   coordinates + a graded caption). His solar-forcing claims also overlap E13/E19, which are already
+   graded contested/speculative — check the caveats don't need a named cross-reference.
+4. **Sweep every other user-visible claim** for the same drift the 2026-07-28 audit found: each
+   `SCENARIOS` caption, every `STANDING_INFO` entry, and each Model Caveats `<li>`. The pattern to
+   look for is a citation that has quietly stopped matching what the layer actually does.
+
+### Constraints that must survive the audit
+- The engine is **cause-agnostic** — it must not endorse any of these. Presets are coordinates plus a
+  graded caption, nothing more.
+- **Terminology is locked** (2026-07-30): displayed tiers are *established / DEBATED / UNVERIFIED*;
+  "fringe"/"pseudoscience" appear in **no** user-visible string — state the specific reason instead.
+  `STANDING` object keys are unchanged internal ids.
+- Any grading change must update **both** `STANDING_INFO` and the matching Model Caveats `<li>` —
+  single grading, two surfaces.
+
+---
+
+## 8. Parked question: install / usage metrics
+
+User asked whether they can tell when people add the app to their Home Screen. Answered but **not
+implemented — it's a privacy and architecture decision, so plan it rather than slipping it in.**
+
+- **Client-side signals exist**: `appinstalled` fires on install and `beforeinstallprompt` indicates
+  installability (both **Chrome/Android only — iOS fires neither**); the only iOS signal is that the
+  *current session* is running installed, via `navigator.standalone` or
+  `matchMedia('(display-mode: standalone)')`.
+- **But there is nowhere to send them.** GitHub Pages is static: no backend, and it exposes no access
+  logs. Repo Insights → Traffic covers the *repository*, not the deployed site.
+- **So it needs a third-party endpoint.** Cloudflare Web Analytics (free, cookieless, one script) or
+  GoatCounter (open-source, free at this scale) are the least-invasive fits; either can take a custom
+  event fired from `appinstalled` plus a once-per-session standalone-mode ping.
+- **Weigh against**: it adds the project's first external runtime dependency, must not break the
+  offline/service-worker story (don't precache it; let it fail silently), and is the first time the
+  app would send *anything* about a visitor anywhere. Worth being deliberate about.
