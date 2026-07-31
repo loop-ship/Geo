@@ -2,7 +2,7 @@
 
 Read `geo.html`'s header comment FIRST — it is the source of truth for build state, locked
 decisions, physics constants with provenance, and landmines. This file covers only what that
-header can't: **live status, what's verified vs. assumed, and one feature left mid-flight.**
+header can't: **live status, what's verified vs. assumed, and the regression oracles that matter.**
 
 ---
 
@@ -15,7 +15,8 @@ root. Every push auto-deploys in ~1 min. `build/` and `archive/` are git-ignored
 accuracy audit, file/doc reorg, Pages deploy, responsive settings drawer, PWA (installable +
 offline), the approachability pass (neutral terminology, plain-English panels, Simple-mode
 defaults, calmer marker density), iOS/Safari hardening, shareable view links, a drag-to-set-pole
-fix, first-impression defaults + hint chip, and a responsive opening camera frame.
+fix, first-impression defaults + hint chip, a responsive opening camera frame, and **E22 monument
+alignments** (§3) — which closes the last known capability gap.
 
 **Working agreement with the user:** the loop is **review → research → plan → revise → ship**.
 "Research" means look *outward* (comparable tools, current literature, best practice), not re-read
@@ -27,7 +28,9 @@ Stormcrow-weather app on localhost:8000.**
 
 ## 2. Verified vs. NOT verified (don't over-claim)
 
-**Verified in-browser:** SW registers and serves offline with the server killed; a pushed update
+**Verified in-browser:** E22's three oracles, its share-link round-trip both directions, bundle wiring
+and clean off-state, with the needles visibly rendering at the correct geography (§3);
+SW registers and serves offline with the server killed; a pushed update
 still propagates (network-first HTML); share links round-trip to an exact match; drag-to-pole is
 stable and tap-safe; Simple = 5 panels / 28 controls vs Advanced 10 / 67; Detail=High reproduces
 the old marker baseline exactly (2,207 quakes / 62 volcanoes).
@@ -50,12 +53,25 @@ the old marker baseline exactly (2,207 quakes / 62 volcanoes).
 
 ---
 
-## 3. IN FLIGHT: E22 monument alignment layer
+## 3. SHIPPED 2026-07-31: E22 monument alignment layer
 
-**Approved and planned, math done, NOT wired.** This is the one real capability gap
-(`research/RESEARCH_1` §6 scoped it; it's also ECDOview's headline feature).
+**Built, wired and verified in-browser.** Nothing here is left to do — this section is kept because the
+oracles and the three honesty points are what any future edit to the layer must not break.
 
-### Already verified — reuse, don't redo
+**Regression oracles (cross-checked in Python and in-browser, identical to the digit):**
+
+| Check | Expected |
+|---|---|
+| Bearing to today's pole, from any site | `0.000°` |
+| Giza residual vs today's pole | `0.067°` (reproduces Dash 2017 — the proof the chain is right) |
+| Giza residual vs the ECDO pole (−14, 31) | `0.255°`, same-meridian flag fires at Δlon `0.13°` |
+| Giza vs a control pole (45N, 100W) | `32.16°`, no flag |
+
+Fastest way to re-run them: load `#lat=-14&lon=31&fx=%2BmonumentAlign` (note `%2B` — a literal `+` in a
+query string decodes to a space) and read `#monu-panel`. Changing only the hash on an already-loaded page
+is a same-document navigation and will NOT re-run the restore; force a reload.
+
+### Verified — reuse, don't redo
 `initialBearing(lat1,lon1,lat2,lon2)` = standard great-circle forward azimuth
 `atan2(sinΔλ·cosφ2, cosφ1·sinφ2 − sinφ1·cosφ2·cosΔλ)`, normalised 0–360. Checked:
 - bearing to today's pole (90°N) = **0.000° from every site**, as it must be;
@@ -85,13 +101,28 @@ Monument axes are **lines, not rays**, so the residual folds to 0–90°:
    Teotihuacán's offset is deliberate — score neither as pole evidence; plot them as context,
    explicitly labelled "not a pole indicator."
 
-### Implementation shape (follow existing conventions)
-One `InstancedMesh` through the existing **`finalizeMarkerMesh(mesh, renderOrder)`** helper with a
-fresh renderOrder and a `MAX` cap, count cleared when off — exactly like E9–E16. Toggle **default
-OFF** in the "Consequences" folder with a plain-English name added to `PLAIN_NAMES`; a
-`STANDING_INFO` entry graded **contested** (the measurements are fact; the *inference* that
-deviations record a pole shift is the contested part); a Model Caveats `<li>`; HUD showing both
-residuals. Include in "Show everything", exclude from the established set.
+### How it was built (all of this is now in the code)
+One `InstancedMesh` via `finalizeMarkerMesh(mesh, 11)`, `MAX_MONU = 32`, count cleared when off — the
+E9–E16 pattern. `renderMonumentAlignments()` is a **standalone function called at the end of
+`computeEffects()`**, not another block inside it: it needs nothing from the Fibonacci site loop, and
+`computeEffects` is the one function the header says not to grow.
+
+Two details worth knowing before editing:
+- **The pole tested against is read back as `R⁻¹·NORTH`, not from `shiftParams`** — so the residual tracks
+  the shift scrubber, shared links and the story clock, all of which move `R` without touching `shiftParams`.
+- **`initialBearing()` takes TRUE east-longitude.** `latLonToDir()` negates longitude for the texture-UV
+  flip; that negation is a *rendering* convention and must never reach the bearing math, or every azimuth
+  silently mirrors. Only marker *placement* goes through `latLonToDir`.
+
+Wired into: `fxContested` (default OFF), `STANDING_INFO` (contested), `PLAIN_NAMES`, the "Show everything"
+bundle, share links (`+monumentAlign`), a Model Caveats `<li>`, three legend rows, and screen-projected
+site labels. `#monu-panel` is deliberately a **sibling** of `.readout-adv`, not a child, so the side-by-side
+comparison survives Simple mode.
+
+**Two adjacent bugs fixed in the same pass:** `LEGEND_PLAIN` was keyed without the `(E9)…(E16)` codes the
+legend markup actually carries, so every coded legend row silently failed to swap to plain language (the
+matcher now tolerates a trailing code); and `#hint-chip` had a hard-coded `bottom:64px` tuned to the short
+Simple-mode readout, so any taller readout slid underneath it (now `positionHintChip()`).
 
 ---
 
@@ -107,8 +138,9 @@ residuals. Include in "Show everything", exclude from the established set.
 - **App stores** — don't, until real people are using the web version and asking.
 
 ## 5. Obvious next moves
-1. Finish **E22** (above).
-2. The owed **iOS/real-device checks** in §2.
-3. The **Grok Build** experiment — repo is clean, standard static web code, ready to import; nothing
+1. The owed **iOS/real-device checks** in §2 — now the largest unverified surface.
+2. The **Grok Build** experiment — repo is clean, standard static web code, ready to import; nothing
    here needs undoing for it. Untried.
-4. Whatever the user's ongoing review turns up — that loop has caught the most real problems.
+3. Whatever the user's ongoing review turns up — that loop has caught the most real problems.
+
+There is no longer a feature left mid-flight; E22 was the last one.

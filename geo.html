@@ -57,6 +57,41 @@
    startup now); ECDO preset regression clean. NOTE: could not get a trustworthy FPS delta from the
    automation environment — the test tab reported document.hidden=true, so Chrome throttled the render
    loop; a real FPS check must be done on a focused desktop tab (user action).
+ - 2026-07-31: E22 MONUMENT ALIGNMENT LAYER — SHIPPED (was the one feature left mid-flight). Compares each
+   cited site's MEASURED axis azimuth against the bearing to today's pole AND to the pole you've set, side by
+   side. Standard great-circle forward azimuth; monument axes are LINES not rays, so the residual folds to
+   0–90°. VERIFIED against three oracles (cross-checked in Python and in-browser, identical to the digit):
+   bearing to today's pole = 0.000° from every site; Giza vs today = 0.067° (reproduces Dash 2017 exactly —
+   this is the regression oracle, re-run it after any change here); Giza vs the ECDO pole (−14, 31) = 0.255°
+   with the same-meridian flag firing at Δlon 0.13°. THE LAYER'S REASON TO EXIST IS THAT IT ARGUES AGAINST THE
+   PREMISE: Giza already matches TODAY'S pole to four arcminutes, so a large shift after ~2500 BC would have
+   left DEGREES of residual — the monument data constrains a recent shift to near-zero, and both numbers are
+   shown so the reader draws the conclusion. SECOND HONESTY POINT, do not remove: Giza's 0.255° "match" to the
+   ECDO pole is a SAME-MERIDIAN COINCIDENCE (Giza 31.13°E, that pole 31°E) — a N–S axis points at anything on
+   its own meridian whatever its latitude — flagged in the panel whenever |Δlon| < 2°; this is a check
+   ECDOview does not appear to make and is the most valuable thing the layer demonstrates. THIRD: only
+   CARDINAL-aimed sites can test a pole at all, so Göbekli Tepe (stellar) and Teotihuacán (deliberate 15.5°
+   offset) are drawn in grey, labelled "not a pole indicator", and never scored — and the white bearing line
+   is drawn ONLY for cardinal sites, because drawing it at a stellar site would imply it is being scored.
+   THREE CITED SITES ONLY — do NOT invent azimuths to pad the list (a residual is only as good as its
+   published azimuth; a short sourced list beats ECDOview's 69). Implementation follows the E9–E16 pattern:
+   one InstancedMesh via finalizeMarkerMesh(mesh, 11), MAX_MONU=32, count cleared when off, per-instance
+   colour. The pole tested against is read back as R^-1·NORTH (NOT shiftParams) so it tracks the scrubber,
+   shared links and the story clock. renderMonumentAlignments() is a STANDALONE function called at the end of
+   computeEffects — it needs nothing from the Fibonacci site loop, and the header says not to grow that
+   function. Wired into: fxContested folder (default OFF), STANDING_INFO (contested — measurements are fact,
+   the inference is not), PLAIN_NAMES, the "Show everything" bundle, share links (+monumentAlign), a Model
+   Caveats <li>, three legend rows, and screen-projected site labels (same mechanism as #body-label).
+   The #monu-panel is deliberately a SIBLING of .readout-adv, not a child, so it survives Simple mode.
+   TWO ADJACENT FIXES made in the same pass: (a) the LEGEND_PLAIN lookup was keyed WITHOUT the "(E9)…(E16)"
+   codes that the legend markup actually carries, so every coded legend row silently failed to swap to plain
+   language — the matcher now tolerates a trailing code; (b) #hint-chip had a hard-coded bottom:64px tuned to
+   the short Simple-mode readout, so a taller readout (this panel, or Advanced mode) slid under it — it now
+   parks just above the readout's measured top edge (positionHintChip()). VERIFIED IN-BROWSER: all three
+   oracles, share-link round-trip both directions, bundles (established off / everything on / clear off),
+   clean off-state (count 0, panel empty, labels hidden), needles visibly rendering N–S at Giza and Göbekli
+   Tepe with labels landing on the correct geography, no overlap, ZERO console errors.
+   Backup: archive/geo.html.pre-e22-2026-07-31.bak.
  - 2026-07-31: RESPONSIVE OPENING FRAME. The camera FOV is VERTICAL, so at a fixed distance a tall narrow
    phone crops the globe far tighter than a wide desktop — the fixed 3.44 that frames well on desktop read
    as "too zoomed" in portrait (user screenshot). The opening distance is now derived from the aspect ratio
@@ -194,14 +229,8 @@
  >>> START HERE IF YOU ARE A FRESH SESSION: research/HANDOFF.md <<<
    It carries live status, what is verified vs. merely assumed, the testing-environment gotchas that
    otherwise waste an hour (throttled rAF/timers in a hidden tab, screenshots timing out under
-   auto-rotate, module scope unreachable from the console), and the ONE feature left mid-flight —
-   E22 monument alignments: approved, bearing math written AND verified, site data cited, not wired.
+   auto-rotate, module scope unreachable from the console) and what is verified vs. merely assumed.
  REMAINING (non-blocking — not yet done):
- - E22 MONUMENT ALIGNMENT LAYER — IN FLIGHT. Design, verified math, cited site data and the two
-   honesty findings (Giza matches TODAY's pole to 0.067°, which constrains a recent shift; and Giza's
-   0.255° "match" to the ECDO pole is a same-meridian coincidence, not evidence) are all in
-   research/HANDOFF.md §3. Reuse that math — it reproduces Dash 2017 exactly, which is the proof it
-   is right.
  - REAL-DEVICE iOS TEST — PARTIALLY CONFIRMED 2026-07-30 by the user: (a) Add to Home Screen works and
    (b) the installed app opens correctly. STILL UNCONFIRMED on a real iPhone: (c) nothing sits under the
    notch/Dynamic Island in portrait OR landscape; (d) the transport bar clears the home indicator;
@@ -549,7 +578,9 @@
    this ordering so seismicity still bumps before the shift. The narrative is honest: driver visibly falls short,
    the shift is the premise.
  ------------------------------------------------------------
- LAST UPDATED: 2026-07-30 (published to GitHub Pages + responsive settings drawer + Simple-mode default;
+ LAST UPDATED: 2026-07-31 (E22 monument alignment layer shipped — the last mid-flight feature; before that:
+   responsive opening frame, first-impression defaults + hint chip, drag-to-pole retune, shareable view links;
+   before that: published to GitHub Pages + responsive settings drawer + Simple-mode default;
    before that: E18–E21 browser QA, code-condense/drag-to-pole, and a perf pass. See the newest BUILD STATUS
    entries above and research/CHANGELOG.md. BUILD STATUS carries the current-state summary a fresh session needs).
 ============================================================
@@ -693,6 +724,29 @@
   #readout b { color: var(--cyan); font-weight: 500; }
   #readout .frame-cyan { color: var(--cyan); }
   #readout .frame-amber { color: var(--amber); }
+
+  /* E22 — MONUMENT ALIGNMENT panel. Deliberately a sibling of .readout-adv, NOT a child: the whole
+     point of the layer is the side-by-side residual comparison, so it must survive Simple mode (which
+     hides .readout-adv). Shown only while the layer is on; hidden with the rest of #readout in a story. */
+  #monu-panel { display: none; margin: 6px 0 2px; font-size: 10px; line-height: 1.6; }
+  body.monu-on #monu-panel { display: block; }
+  #monu-panel .hdr { color: var(--ink); letter-spacing: 0.1em; }
+  #monu-panel .hdr i { color: var(--ink-dim); font-style: normal; text-transform: none; letter-spacing: 0.04em; }
+  #monu-panel .row { text-transform: none; letter-spacing: 0.03em; white-space: nowrap; }
+  #monu-panel .site { color: #f2e6c8; }
+  #monu-panel .site.ctx { color: #8b929c; }        /* stellar/solar aim = context only, never pole evidence */
+  #monu-panel .num { color: var(--cyan); font-weight: 500; }
+  #monu-panel .warn { color: var(--amber); }
+  #monu-panel .note { color: var(--ink-dim); text-transform: none; letter-spacing: 0.03em;
+                      white-space: normal; max-width: 46ch; margin-top: 3px; }
+  /* projected site labels (same mechanism as #body-label — see updateMonumentLabels) */
+  .monu-label {
+    position: fixed; z-index: 3; display: none; pointer-events: none;
+    transform: translate(-50%, -160%); white-space: nowrap;
+    font-size: 9px; letter-spacing: 0.06em; color: #f2e6c8;
+    text-shadow: 0 0 4px #000, 0 0 2px #000;
+  }
+  .monu-label.ctx { color: #a8b0ba; }
 
   /* #stage-badge retired 2026-07-30 — a build-status relic ("STAGE 6 / Polish · Complete") with no
      user value; hidden so the top-right corner is free for the ⚙ controls gear. Kept in the DOM
@@ -1023,6 +1077,7 @@
 
 <div id="standing-key"></div>
 <div id="body-label"></div>
+<div id="monu-labels"></div><!-- E22: one .monu-label span per site, created at startup, projected in tick -->
 
 <div id="story-bar">
   <button id="story-prev" title="Previous step">◀◀</button>
@@ -1046,8 +1101,9 @@
   <div>SPIN AXIS &nbsp;<b>fixed in world space</b> &nbsp;|&nbsp; BULGE &nbsp;<b id="r-bulge">rigid</b></div>
   <div>RENDERER &nbsp;<b id="r-renderer">WebGL2</b> &nbsp;|&nbsp; FPS &nbsp;<b id="r-fps">–</b></div>
   <div>NEW POLE &nbsp;<b id="r-pole">90°, 0°</b> &nbsp;|&nbsp; CRUST SHIFT &nbsp;<b id="r-shift">0.0°</b></div>
-  <div>EVENTS &nbsp; QUAKES <b id="r-quakes">0</b> &nbsp;|&nbsp; VOLCANOES <b id="r-volc">0</b> &nbsp;|&nbsp; TRIGGERED <b id="r-trig">0</b> &nbsp;|&nbsp; SYNCH <b id="r-lod">0</b> &nbsp;|&nbsp; ERUPT <b id="r-deglac">—</b> &nbsp;|&nbsp; GIA <b id="r-gia">0</b> &nbsp;|&nbsp; SOLAR <b id="r-solar">0</b> &nbsp;|&nbsp; CASCADE <b id="r-casc">0</b> &nbsp;|&nbsp; TSUNAMI <b id="r-tsu">0</b> &nbsp;|&nbsp; FAULT N/T/S <b id="r-style">—</b> &nbsp;|&nbsp; Δσ THRESH <b>0.01 MPa</b> &nbsp;|&nbsp; BODY ΔCFS <b id="r-body">—</b> &nbsp;|&nbsp; FLUX P <b id="r-flux">—</b> &nbsp;|&nbsp; FAULT GATE <b id="r-fault">no data — run make_plate_boundaries.py</b></div>
+  <div>EVENTS &nbsp; QUAKES <b id="r-quakes">0</b> &nbsp;|&nbsp; VOLCANOES <b id="r-volc">0</b> &nbsp;|&nbsp; TRIGGERED <b id="r-trig">0</b> &nbsp;|&nbsp; SYNCH <b id="r-lod">0</b> &nbsp;|&nbsp; ERUPT <b id="r-deglac">—</b> &nbsp;|&nbsp; GIA <b id="r-gia">0</b> &nbsp;|&nbsp; SOLAR <b id="r-solar">0</b> &nbsp;|&nbsp; CASCADE <b id="r-casc">0</b> &nbsp;|&nbsp; TSUNAMI <b id="r-tsu">0</b> &nbsp;|&nbsp; FAULT N/T/S <b id="r-style">—</b> &nbsp;|&nbsp; MONU (Giza) <b id="r-monu">—</b> &nbsp;|&nbsp; Δσ THRESH <b>0.01 MPa</b> &nbsp;|&nbsp; BODY ΔCFS <b id="r-body">—</b> &nbsp;|&nbsp; FLUX P <b id="r-flux">—</b> &nbsp;|&nbsp; FAULT GATE <b id="r-fault">no data — run make_plate_boundaries.py</b></div>
   </div><!-- /readout-adv -->
+  <div id="monu-panel"></div><!-- E22: filled by renderMonumentAlignments(); outside .readout-adv on purpose -->
   <div id="legend-head" class="legend-toggle">▾ MAP KEY</div>
   <div id="legend-wrap">
   <div id="legend" style="margin-top:8px; display:flex; gap:14px; flex-wrap:wrap; text-transform:none; letter-spacing:0.04em;">
@@ -1068,6 +1124,9 @@
     <span><i style="display:inline-block;width:9px;height:9px;background:#5af08c;margin-right:5px;border-radius:1px;"></i>solar coupling (E13)</span>
     <span><i style="display:inline-block;width:9px;height:9px;background:#ff5bd0;margin-right:5px;border-radius:50%;"></i>EQ→volcano (E14)</span>
     <span><i style="display:inline-block;width:11px;height:11px;border:2px solid #bff0ff;border-radius:50%;margin-right:5px;"></i>flank-collapse tsunami (E16)</span>
+    <span><i style="display:inline-block;width:13px;height:3px;background:#f2e6c8;margin-right:5px;vertical-align:middle;"></i>monument axis, cardinal-aimed (E22)</span>
+    <span><i style="display:inline-block;width:13px;height:3px;background:#8b929c;margin-right:5px;vertical-align:middle;"></i>monument axis, not a pole indicator</span>
+    <span><i style="display:inline-block;width:13px;height:3px;background:#ffffff;margin-right:5px;vertical-align:middle;"></i>bearing to the set pole</span>
     <span>fault style (E15):
       <i style="display:inline-block;width:9px;height:9px;background:#2f7bff;margin:0 2px 0 4px;border-radius:1px;"></i>normal
       <i style="display:inline-block;width:9px;height:9px;background:#ff2d55;margin:0 2px 0 6px;border-radius:1px;"></i>thrust
@@ -1235,6 +1294,29 @@
       adjacent work is planetary tides faintly <i>pacing</i> the ~11-year solar cycle (Stefani 2016/2019), not
       triggering flares on demand. All four are off by default and badged separately, so the engine shows the
       mechanism without endorsing it.</li>
+    <li><b>Monument alignments (E22): the measurements are fact, the inference is contested — and here the
+      data argues <i>against</i> a recent shift.</b> The idea is that ancient builders aligned monuments to the
+      pole of their day, so a later pole shift would leave a measurable deviation. The azimuths are real and
+      published; what is contested is reading a deviation as <i>rotational</i> rather than constructional.
+      Three things this layer shows, and the first is the most important. <b>(1) Giza already matches
+      <i>today's</i> pole to 0.067°</b> — four arcminutes, exactly the "better than four minutes of arc"
+      Glen Dash (2017) measured, and the mainstream reading is that even this residual is surveying method
+      (a consistent counterclockwise rotation across all three large pyramids, consistent with a fall-equinox
+      shadow method; Spence 2000 dates the alignment to ~2467 BC by stellar transit). Any large pole shift
+      after ~2500 BC would have left a residual of <i>degrees</i>, not arcminutes. So this dataset
+      <i>constrains</i> a recent shift to be near-zero — it is evidence against the scenario, not for it, and
+      it is shown here for exactly that reason. <b>(2) A "match" to a hypothesised pole can be pure geometry.</b>
+      Giza sits at 31.13°E; the ECDO pole is placed at 31°E — essentially the same meridian. A north–south
+      axis points at <i>anything</i> on its own meridian regardless of that thing's latitude, so Giza's 0.255°
+      "alignment" to the ECDO pole is a coincidence of longitude, not evidence. The panel flags this
+      (⚠ same meridian) whenever the site and the set pole are within 2° of longitude — check for it before
+      reading any close match as meaningful. <b>(3) Only cardinal-aimed sites can test a pole at all.</b>
+      Göbekli Tepe's Enclosure D is a proposed <i>stellar</i> alignment and Teotihuacán's Avenue of the Dead is
+      offset ~15.5° east of north <i>deliberately</i> (Šprajc: a solar/calendrical horizon target). Neither
+      encodes north, so neither scores as pole evidence — they are drawn in grey and labelled "not a pole
+      indicator." Three cited sites are shown rather than a long list, because a residual is only as good as
+      the published azimuth behind it. The bearing is a standard great-circle forward azimuth, and monument
+      axes are <i>lines</i>, not rays, so the residual folds to 0–90°.</li>
   </ol>
   <p class="foot">And the genre-level caveat that governs everything above: the catastrophic water
     redistribution itself depends on the equatorial bulge <i>not</i> relaxing during the shift. Set
@@ -2415,6 +2497,73 @@ const tsuMesh = finalizeMarkerMesh(new THREE.InstancedMesh(
   MAX_TSU
 ), 10);
 
+// ============================================================
+//  E22 — ANCIENT MONUMENT ALIGNMENT LAYER (RESEARCH_1 §6; also ECDOview's headline feature).
+//  Compare each site's MEASURED axis azimuth against the bearing to (a) today's pole and (b) the pole
+//  currently set in the engine, and show BOTH residuals side by side.
+//
+//  WHY THIS LAYER EXISTS — it is the one place the engine's own data argues AGAINST the premise, and that
+//  is the point. Giza matches TODAY'S pole to 0.067° (= Dash 2017's "better than four minutes of arc").
+//  A large shift after ~2500 BC would have left DEGREES of residual, so this dataset constrains a recent
+//  shift to near-zero. Showing both numbers and letting the reader draw the conclusion is the honest move.
+//
+//  THE SAME-MERIDIAN TRAP (the most valuable thing here; ECDOview does not appear to check it): Giza also
+//  "aligns" with the ECDO pole to 0.255° — but Giza is at 31.13°E and that pole is placed at 31°E. A N–S
+//  axis points at ANYTHING on its own meridian whatever the latitude, so that match is geometry, not
+//  evidence. Flagged in the panel whenever |Δlon| < SAME_MERIDIAN_DEG.
+//
+//  ONLY CARDINAL-AIMED SITES TEST A POLE. Göbekli Tepe is a proposed STELLAR alignment; Teotihuacán's
+//  offset is DELIBERATE (solar/calendrical). They are plotted as context in grey and explicitly labelled
+//  "not a pole indicator" — never scored as pole evidence. Do not "fix" them into the residual scoring.
+//
+//  DO NOT INVENT AZIMUTHS. A short cited list beats ECDOview's 69 unsourced ones; a residual is only as
+//  good as the published azimuth behind it. Add a site only WITH a source.
+// ============================================================
+const MONUMENTS = [
+  { name: 'Giza · Great Pyramid',    lat: 29.9792, lon:  31.1342, az: 359.933, aim: 'cardinal',
+    note: '0.067° CCW of cardinal', src: 'Dash 2017' },
+  { name: 'Göbekli Tepe · Encl. D',  lat: 37.2233, lon:  38.9224, az: 172.0,   aim: 'stellar',
+    note: 'stellar aim (C ≈165°, B ≈159°)', src: 'Magli' },
+  { name: 'Teotihuacán · Ave. Dead', lat: 19.6925, lon: -98.8438, az:  15.5,   aim: 'solar',
+    note: 'deliberate 15.5° E-of-N offset', src: 'Šprajc' },
+];
+const SAME_MERIDIAN_DEG = 2.0;      // |Δlon| below which a N–S axis trivially points at the pole
+const MONU_STONE = 0xf2e6c8;        // parchment = cardinal-aimed axis (can test pole position)
+const MONU_CTX   = 0x8b929c;        // grey      = stellar/solar aim, context only, NOT pole evidence
+const MONU_BRG   = 0xffffff;        // white     = construction line: bearing to the pole you've set
+
+// Standard great-circle FORWARD AZIMUTH, degrees 0–360 clockwise from north. VERIFIED against two oracles:
+// bearing to today's pole (90°N) is 0.000° from every site (as it must be), and Giza's residual against
+// today's pole is 0.067°, reproducing Dash 2017 exactly. That match is the proof the whole chain is right.
+// NOTE: takes TRUE east-longitude. latLonToDir() negates lon for the texture-UV flip — that negation is a
+// RENDERING convention and must never reach this function, or every azimuth silently mirrors.
+function initialBearing(lat1, lon1, lat2, lon2) {
+  const p1 = THREE.MathUtils.degToRad(lat1), p2 = THREE.MathUtils.degToRad(lat2);
+  const dl = THREE.MathUtils.degToRad(lon2 - lon1);
+  const y = Math.sin(dl) * Math.cos(p2);
+  const x = Math.cos(p1) * Math.sin(p2) - Math.sin(p1) * Math.cos(p2) * Math.cos(dl);
+  return (THREE.MathUtils.radToDeg(Math.atan2(y, x)) + 360) % 360;
+}
+// A monument axis is a LINE, not a ray: an axis 180° from the bearing is the same alignment. So the
+// residual folds to 0–90°. (Which is also why the bearing needle is drawn as a line, not an arrow.)
+function axisResidual(azDeg, bearingDeg) {
+  const d = Math.abs(((azDeg - bearingDeg + 180) % 360 + 360) % 360 - 180);
+  return Math.min(d, 180 - d);
+}
+// Longitude separation folded the same way — Δlon of 180° is also "on the same meridian" for a N–S line.
+function meridianSeparation(lonA, lonB) {
+  const d = Math.abs(((lonA - lonB + 180) % 360 + 360) % 360 - 180);
+  return Math.min(d, 180 - d);
+}
+
+// Needle geometry: unit length along +Z, centred (so it reads as a LINE through the site, not a ray).
+// Per-instance scale sets the length; per-instance colour sets the three roles above.
+const MAX_MONU = 32;                                     // 2 lines/site with room to add cited sites
+const monuGeo = new THREE.BoxGeometry(0.0035, 0.0022, 1);
+const monuMesh = finalizeMarkerMesh(new THREE.InstancedMesh(
+  monuGeo, new THREE.MeshBasicMaterial(), MAX_MONU       // per-instance colour via setColorAt
+), 11);
+
 const effectsParams = {
   showStressOverlay: false,   // continuous fragment overlay (off by default; markers tell the story)
   showEarthquakes: true,
@@ -2457,6 +2606,8 @@ const effectsParams = {
   // E16 — volcanic flank-collapse → tsunami (see header). ESTABLISHED (loading physics); marker-level, exposure not forecast.
   flankCollapse: false,       // ESTABLISHED: flag COASTAL volcanoes as flank-collapse tsunami sources + draw a reach ring
   maxTsunamiReachKm: 500,     // cap on the illustrative tsunami-reach ring radius (Anak Krakatau ~tens km; Fogo/Tenerife ocean-basin)
+  // E22 — monument alignments (see header). CONTESTED: the azimuths are fact, the pole INFERENCE is not.
+  monumentAlign: false,       // CONTESTED: compare each cited site's axis to today's pole vs the set pole
 };
 
 // ENHANCEMENT — depth attenuation factor for a harmonic surface load on an elastic half-space:
@@ -2905,6 +3056,162 @@ function computeEffects() {
   const tse = document.getElementById('r-tsu');    if (tse) tse.textContent = ntsu.toLocaleString();
   const ste = document.getElementById('r-style');  if (ste) ste.textContent = effectsParams.faultStyle
     ? (nNorm.toLocaleString() + ' / ' + nThrust.toLocaleString() + ' / ' + nSlip.toLocaleString()) : '—';
+  renderMonumentAlignments();   // E22 — independent of the site loop above; hoisted declaration
+}
+
+// ---- E22: MONUMENT ALIGNMENTS (see the E22 block above for the reasoning; header for the landmines) ----
+// Deliberately a STANDALONE function called at the end of computeEffects rather than another block inside
+// it: this layer needs nothing from the Fibonacci site loop (no stress, no elevation gate), and
+// computeEffects is already the one function the header says not to grow or split. Same debounce, same
+// lifecycle, zero coupling.
+const _monuN   = new THREE.Vector3();   // site crust dir
+const _monuW   = new THREE.Vector3();   // site world dir (= R * crust dir)
+const _monuNo  = new THREE.Vector3();   // local north tangent
+const _monuEa  = new THREE.Vector3();   // local east tangent
+const _monuDir = new THREE.Vector3();   // needle direction (world)
+const _monuX   = new THREE.Vector3();   // basis helper
+const _monuB   = new THREE.Matrix4();
+const _monuPole = new THREE.Vector3();
+const _monuSites = [];                  // { el, dir (world), radius } for the projected labels
+const MONU_AXIS_LEN = 0.11;             // world units (~3° of arc); the measured monument axis
+const MONU_BRG_LEN  = 0.17;             // longer so it stays readable when it nearly coincides with the axis
+
+function fmtResidual(d) { return (d < 1 ? d.toFixed(3) : d.toFixed(2)) + '°'; }
+
+function renderMonumentAlignments() {
+  const on = !!effectsParams.monumentAlign;
+  document.body.classList.toggle('monu-on', on);
+  const rm = document.getElementById('r-monu');
+  const panel = document.getElementById('monu-panel');
+  _monuSites.length = 0;
+  if (!on) {
+    monuMesh.count = 0; monuMesh.instanceMatrix.needsUpdate = true;
+    if (rm) rm.textContent = '—';
+    if (panel) panel.innerHTML = '';
+    document.querySelectorAll('.monu-label').forEach(el => { el.style.display = 'none'; });
+    if (typeof positionHintChip === 'function') positionHintChip();   // readout just got shorter again
+    return;
+  }
+
+  // THE POLE WE TEST AGAINST is the one currently realised on screen, not shiftParams: read it back as the
+  // crust point that maps to +Y, i.e. R^-1 * NORTH. That keeps the residual consistent with the shift
+  // scrubber, shared links and the story clock (all of which move R without touching shiftParams).
+  _monuPole.set(0, 1, 0).applyMatrix3(uniforms.uRinv.value).normalize();
+  const pole = dirToLatLon(_monuPole);
+
+  const exag = uniforms.uExag.value, dispRef = uniforms.uDispRefMeters.value;
+  const rows = [];
+  let n = 0, headline = null, warned = null;
+
+  for (let i = 0; i < MONUMENTS.length && n + 2 <= MAX_MONU; i++) {
+    const m = MONUMENTS[i];
+    const cardinal = m.aim === 'cardinal';
+    // --- residuals (pure lat/lon geometry; TRUE east-longitude, no rendering negation) ---
+    const resToday = axisResidual(m.az, initialBearing(m.lat, m.lon, 90, 0));   // bearing to 90°N is 0 from anywhere
+    const brgPole  = initialBearing(m.lat, m.lon, pole.lat, pole.lon);
+    const resPole  = axisResidual(m.az, brgPole);
+    const dLon     = meridianSeparation(m.lon, pole.lon);
+    const sameMeridian = cardinal && dLon < SAME_MERIDIAN_DEG;
+
+    // --- placement: the axis is welded to the CRUST, so build it in crust coords and rotate by R ---
+    _monuN.copy(latLonToDir(m.lat, m.lon)).normalize();
+    const lo = THREE.MathUtils.degToRad(-m.lon), la = THREE.MathUtils.degToRad(m.lat);
+    _monuNo.set(-Math.sin(la) * Math.cos(lo), Math.cos(la), -Math.sin(la) * Math.sin(lo)).normalize(); // ∂p/∂lat
+    _monuEa.set(Math.sin(lo), 0, -Math.cos(lo)).normalize();                    // ∂p/∂(true lon)
+    _monuN.applyQuaternion(_qCur);                                              // crust -> world
+    _monuNo.applyQuaternion(_qCur);
+    _monuEa.applyQuaternion(_qCur);
+    const E = sampleElevation(latLonToDir(m.lat, m.lon));
+    const disp = (E / dispRef) * exag;
+    const baseR = GLOBE_R + Math.max(disp, 0);
+
+    const put = (azDeg, len, colour, lift) => {
+      const a = THREE.MathUtils.degToRad(azDeg);
+      _monuDir.copy(_monuNo).multiplyScalar(Math.cos(a)).addScaledVector(_monuEa, Math.sin(a)).normalize();
+      _monuX.crossVectors(_monuN, _monuDir).normalize();          // right-handed basis: x = normal × dir
+      _monuB.makeBasis(_monuX, _monuN, _monuDir);                 // +Y = surface normal, +Z = needle
+      _quat.setFromRotationMatrix(_monuB);
+      _pos.copy(_monuN).multiplyScalar(baseR + lift);
+      _scl.set(1, 1, len);
+      _mm.compose(_pos, _quat, _scl);
+      monuMesh.setMatrixAt(n, _mm);
+      monuMesh.setColorAt(n, _col.setHex(colour));
+      n++;
+    };
+    put(m.az, MONU_AXIS_LEN, cardinal ? MONU_STONE : MONU_CTX, 0.009);
+    // The bearing line is drawn ONLY for cardinal-aimed sites — drawing it at a stellar/solar site would
+    // imply its axis is being scored against the pole, which is exactly the error this layer exists to avoid.
+    if (cardinal) put(brgPole, MONU_BRG_LEN, MONU_BRG, 0.014);    // lifted clear so it never z-fights the axis
+
+    _monuSites.push({ name: m.name.split(' · ')[0], ctx: !cardinal, dir: _monuN.clone(), radius: baseR + 0.02 });
+
+    if (cardinal) {
+      if (!headline) headline = fmtResidual(resToday) + ' / ' + fmtResidual(resPole) + (sameMeridian ? ' ⚠' : '');
+      rows.push('<div class="row"><span class="site">' + m.name + '</span> &nbsp;axis <span class="num">' +
+        m.az.toFixed(3) + '°</span> &nbsp;· today <span class="num">' + fmtResidual(resToday) +
+        '</span> &nbsp;· this pole <span class="num">' + fmtResidual(resPole) + '</span>' +
+        (sameMeridian ? ' &nbsp;<span class="warn">⚠ same meridian</span>' : '') + '</div>');
+      if (sameMeridian && !warned) warned = { name: m.name.split(' · ')[0], dLon };
+    } else {
+      rows.push('<div class="row"><span class="site ctx">' + m.name + '</span> &nbsp;axis ~' +
+        m.az.toFixed(1) + '° &nbsp;· ' + m.note + ' — <i>not a pole indicator</i></div>');
+    }
+  }
+
+  monuMesh.count = n;
+  monuMesh.instanceMatrix.needsUpdate = true;
+  if (monuMesh.instanceColor) monuMesh.instanceColor.needsUpdate = true;
+  if (rm) rm.textContent = headline || '—';
+
+  if (panel) {
+    let html = '<div class="hdr">MONUMENT ALIGNMENTS <i>— measured axis vs. bearing to the pole, folded to 0–90°</i></div>' + rows.join('');
+    if (warned) {
+      html += '<div class="note"><span class="warn">⚠</span> ' + warned.name + ' sits on the set pole\'s meridian ' +
+        '(Δlon ' + warned.dLon.toFixed(2) + '°). A north–south axis points at <i>anything</i> on its own meridian ' +
+        'whatever that thing\'s latitude — so this match is geometry, not evidence.</div>';
+    }
+    html += '<div class="note">Giza already matches <i>today\'s</i> pole to 0.067° (Dash 2017). A large shift ' +
+      'after ~2500 BC would have left degrees of residual — so this data constrains a recent shift to near-zero. ' +
+      'Mainstream reading: the residual is surveying method, not pole motion.</div>';
+    panel.innerHTML = html;
+  }
+  ensureMonumentLabels();
+  updateMonumentLabels();
+  if (typeof positionHintChip === 'function') positionHintChip();   // the panel changes #readout's height
+}
+
+// Screen-projected site labels — same mechanism as #body-label (E18): the camera moves independently of
+// the marker recompute, so the position must be refreshed from tick, not just here.
+function ensureMonumentLabels() {
+  const host = document.getElementById('monu-labels'); if (!host) return;
+  while (host.children.length < _monuSites.length) {
+    const s = document.createElement('span'); s.className = 'monu-label'; host.appendChild(s);
+  }
+  for (let i = 0; i < host.children.length; i++) {
+    const el = host.children[i];
+    if (i < _monuSites.length) {
+      el.textContent = _monuSites[i].name;
+      el.classList.toggle('ctx', _monuSites[i].ctx);
+      _monuSites[i].el = el;
+    } else { el.style.display = 'none'; }
+  }
+}
+const _monuLbl = new THREE.Vector3(), _monuCam = new THREE.Vector3();
+function updateMonumentLabels() {
+  if (!effectsParams.monumentAlign || !_monuSites.length) return;
+  const r = renderer.domElement.getBoundingClientRect();
+  const camLen = camera.position.length();
+  _monuCam.copy(camera.position).normalize();
+  const horizon = GLOBE_R / Math.max(camLen, GLOBE_R + 1e-3);   // a point is visible past the globe's limb
+  for (const s of _monuSites) {
+    if (!s.el) continue;
+    if (s.dir.dot(_monuCam) <= horizon) { s.el.style.display = 'none'; continue; }  // occluded by the globe
+    _monuLbl.copy(s.dir).multiplyScalar(s.radius).project(camera);
+    if (_monuLbl.z > 1) { s.el.style.display = 'none'; continue; }
+    s.el.style.display = 'block';
+    s.el.style.left = ((_monuLbl.x * 0.5 + 0.5) * r.width + r.left) + 'px';
+    s.el.style.top  = ((-_monuLbl.y * 0.5 + 0.5) * r.height + r.top) + 'px';
+  }
 }
 
 let _effTimer = null;
@@ -2925,11 +3232,11 @@ const fxFolder = gui.addFolder('Consequences');
 // contested/speculative, minus the unsupported deep-preference); None = clear. (Comprehension pass.)
 const EFFECT_BUNDLES = {
   essential: { showEarthquakes:true, showVolcanoes:true, dynamicTrigger:true, deglaciationMult:true, giaRebound:true, eqVolcCascade:true, faultStyle:true, flankCollapse:true,
-               antipodalBonus:false, lodModulation:false, solarCoupling:false, deepPreference:false, _climate:false },
+               antipodalBonus:false, lodModulation:false, solarCoupling:false, deepPreference:false, monumentAlign:false, _climate:false },
   full:      { showEarthquakes:true, showVolcanoes:true, dynamicTrigger:true, deglaciationMult:true, giaRebound:true, eqVolcCascade:true, faultStyle:true, flankCollapse:true,
-               antipodalBonus:true, lodModulation:true, solarCoupling:true, deepPreference:false, _climate:true },
+               antipodalBonus:true, lodModulation:true, solarCoupling:true, deepPreference:false, monumentAlign:true, _climate:true },
   none:      { showEarthquakes:false, showVolcanoes:false, dynamicTrigger:false, deglaciationMult:false, giaRebound:false, eqVolcCascade:false, faultStyle:false, flankCollapse:false,
-               antipodalBonus:false, lodModulation:false, solarCoupling:false, deepPreference:false, _climate:false },
+               antipodalBonus:false, lodModulation:false, solarCoupling:false, deepPreference:false, monumentAlign:false, _climate:false },
 };
 function setEffectBundle(name) {
   const b = EFFECT_BUNDLES[name]; if (!b) return;
@@ -2977,6 +3284,7 @@ fxEstablished.add(effectsParams, 'deglacMaxMult', 2, 50, 1).name('Max Eruption �
 fxEstablished.add(effectsParams, 'deglacAmplifyX', 2, 30, 1).name('Plume Threshold (×)').onChange(scheduleEffects);
 fxEstablished.add(effectsParams, 'giaRebound').name('GIA Rebound').onChange(computeEffects);
 fxEstablished.add(effectsParams, 'giaThreshold', 0.005, 0.2, 0.005).name('Rebound ΔCFS (MPa)').onChange(scheduleEffects);
+fxContested.add(effectsParams, 'monumentAlign').name('Monument Alignments').onChange(computeEffects);
 fxContested.add(effectsParams, 'solarCoupling').name('Solar Coupling').onChange(computeEffects);
 fxContested.add(effectsParams, 'solarFlux', 0, 1, 0.05).name('Proton Flux').onChange(scheduleEffects);
 fxEstablished.add(effectsParams, 'eqVolcCascade').name('EQ→Volcano Cascade').onChange(computeEffects);
@@ -3366,7 +3674,7 @@ function applyPreset(p) {
 // ============================================================
 const SHARE_LAYER_KEYS = ['showStressOverlay','showEarthquakes','showVolcanoes','stressWeighted','gateToFaults',
   'dynamicTrigger','antipodalBonus','deepPreference','lodModulation','deglaciationMult','giaRebound',
-  'solarCoupling','eqVolcCascade','faultStyle','flankCollapse'];
+  'solarCoupling','eqVolcCascade','faultStyle','flankCollapse','monumentAlign'];
 // Defaults are snapshotted LAZILY on first use, not at module-eval time: this block sits above the
 // cineParams/detailParams declarations, and touching a `const` before its initializer runs is a
 // temporal-dead-zone ReferenceError that aborts the whole module. (Learned the hard way — don't
@@ -3382,7 +3690,7 @@ function shareDefaults() {
       showStressOverlay:false, showEarthquakes:true, showVolcanoes:true, stressWeighted:true,
       gateToFaults:false, dynamicTrigger:false, antipodalBonus:false, deepPreference:false,
       lodModulation:false, deglaciationMult:false, giaRebound:false, solarCoupling:false,
-      eqVolcCascade:false, faultStyle:false, flankCollapse:false,
+      eqVolcCascade:false, faultStyle:false, flankCollapse:false, monumentAlign:false,
     };
   }
   return SHARE_DEFAULTS;
@@ -3774,6 +4082,7 @@ const STANDING_INFO = {   // GUI property name -> { tier, what (one line), src }
   eqVolcCascade:    { tier: 'established', what: 'great quakes raising the nearby eruption rate for days — a small triggered fraction', src: 'Manga & Brodsky 2006; Nishimura 2017' },
   faultStyle:       { tier: 'established', what: 'first-order fault regime from the degree-2 reorientation stress pattern', src: 'Melosh 1980; Matsuyama & Nimmo 2011' },
   flankCollapse:    { tier: 'established', what: 'coastal volcanic flank-collapse tsunamis — exposure, not a wave model', src: 'Ramalho 2015; Anak Krakatau 2018' },
+  monumentAlign:    { tier: 'contested',   what: "ancient monument axes vs the pole — the azimuths are measured fact, but reading a deviation as ROTATIONAL rather than constructional is the contested part; note Giza already matches TODAY's pole to 0.067°", src: 'Dash 2017; Spence 2000; Magli; Šprajc' },
   showClimate:      { tier: 'established', what: "each cell's insolation/climate belt recomputed from its new latitude", src: 'Daradich 2017' },
   enableBody:       { tier: 'speculative', what: "a passing body's tidal Coulomb stress added to the field — its ΔCFS stays far below the 0.01 MPa line for any plausible body (shown in the readout)", src: 'tidal-stress ceiling; threshold King/Stein/Lin 1994' },
   enableStorm:      { tier: 'contested',   what: 'a solar proton-flux pulse (FRED) MULTIPLYING the E13 amplitude — quakes bump in the 2–7 day window', src: 'Marchitelli 2020 (positive) vs Love & Thomas 2013 (null)' },
@@ -4241,6 +4550,7 @@ const PLAIN_NAMES = {
   'Solar Coupling':'Solar storms nudge ready faults (contested)', 'Proton Flux':'Solar-storm strength',
   'EQ→Volcano Cascade':'Big quakes can wake nearby volcanoes', 'Cascade Mag Floor':'Smallest quake that can do this',
   'Fault Style':'Colour quakes by fault type', 'Flank-Collapse Tsunami':'Coastal-volcano collapse tsunamis',
+  'Monument Alignments':'Do old monuments point at this pole?',
   'Max Tsunami Reach (km)':'Tsunami reach ring (km)', 'Climate Zones':'Show shifted climate belts',
   'Show Belt Crossings':'Highlight crust that crossed a belt', 'Model Caveats':'Honest limitations',
   'Perturbing Body':'Add a passing body', 'Mass (Moons)':'Body mass (in Moons)',
@@ -4263,6 +4573,9 @@ const LEGEND_PLAIN = {   // bottom-legend rows → lay phrasing (already-plain r
   'solar coupling':'fault nudged by a solar storm',
   'EQ→volcano':'volcano set off by a quake',
   'flank-collapse tsunami':'volcano-collapse tsunami',
+  'monument axis, cardinal-aimed':'monument built facing north',
+  'monument axis, not a pole indicator':'monument aimed at a star or the sun',
+  'bearing to the set pole':'direction to the pole you set',
 };
 const _origNames = new Map();   // controller -> original display name (so the swap is reversible)
 function setPlainLanguage(on) {
@@ -4281,7 +4594,11 @@ function setPlainLanguage(on) {
   document.querySelectorAll('#legend span, #legend2 span').forEach(sp => {
     const last = sp.lastChild;
     if (!last || last.nodeType !== 3) return;            // only rows whose final node is a plain text label
-    const key = last.textContent.trim();
+    // Tolerate the trailing build code: the legend rows read "… (E16)" but LEGEND_PLAIN is keyed without
+    // it (the 2026-07-30 de-jargon pass stripped codes from control labels and keyed this map to match,
+    // but left the codes in the legend markup) — so every coded row silently failed to swap. Restoring
+    // still uses sp._origLeg, so the round-trip is unaffected.
+    const key = last.textContent.trim().replace(/\s*\(E\d+\)$/, '');
     if (on) {
       if (LEGEND_PLAIN[key] && sp._origLeg === undefined) { sp._origLeg = last.textContent; last.textContent = LEGEND_PLAIN[key]; }
     } else if (sp._origLeg !== undefined) { last.textContent = sp._origLeg; sp._origLeg = undefined; }
@@ -4426,6 +4743,17 @@ addEventListener('appinstalled', () => { _installPrompt = null; if (_installBtn)
 // time in the corner. Dismissal is permanent via localStorage — the SAME pattern as the first-run
 // explainer (geo_seen_intro) and the iOS install hint, deliberately reused rather than inventing a
 // third mechanism. Hidden while a story plays (the bottom-left is busy) and with body.ui-hidden.
+// The chip's CSS bottom (64px) was tuned against the SHORT Simple-mode readout. Anything that makes the
+// readout taller — E22's monument panel, or Advanced mode's full technical block + open map key — slides
+// it underneath the chip. So park the chip just above whatever the readout's actual top edge is, in
+// viewport coords (which already include the safe-area insets baked into #readout's own bottom/left).
+// Called on show, on each 12 s cycle, on resize, and whenever the monument panel toggles.
+function positionHintChip() {
+  const chip = document.getElementById('hint-chip'), ro = document.getElementById('readout');
+  if (!chip || !ro || chip.style.display === 'none') return;
+  const top = ro.getBoundingClientRect().top;
+  chip.style.bottom = Math.max(64, Math.round(window.innerHeight - top + 12)) + 'px';
+}
 const HINTS = [
   'Drag the globe to look around · pinch or scroll to zoom.',
   'Press <b>▶ Play guided story</b> for a narrated walkthrough.',
@@ -4442,9 +4770,10 @@ const HINTS = [
   try { dismissed = localStorage.getItem('geo_hints_done') === '1'; } catch (e) {}
   if (dismissed) return;
   let i = 0;
-  const show = () => { txt.innerHTML = HINTS[i % HINTS.length]; chip.style.display = 'block'; i++; };
+  const show = () => { txt.innerHTML = HINTS[i % HINTS.length]; chip.style.display = 'block'; i++; positionHintChip(); };
   show();
   const timer = setInterval(show, 12000);
+  addEventListener('resize', positionHintChip);
   document.getElementById('hint-close').addEventListener('click', () => {
     clearInterval(timer);
     chip.style.display = 'none';
@@ -4494,6 +4823,7 @@ function tick() {
     _bodySun.position.copy(uniforms.uLightDir.value);                 // keep the body's key light in sync
   }
   if (driverParams.enableBody) updateBodyLabel();   // E18: keep the label pinned to the body as the camera moves
+  if (effectsParams.monumentAlign) updateMonumentLabels();   // E22: same reason — the camera moves independently
   if (cineActive()) { updateCine(t); renderCine(); }   // E21: cinematic path (Sun/CME/atmo/field-lines + selective bloom)
   else renderer.render(worldScene, camera);            // default path — byte-for-byte the pre-E21 render
 

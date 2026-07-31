@@ -303,6 +303,73 @@ history behind that, not a substitute for it.
 
 ## Part 2 — Session changelog (chronological, most recent first)
 
+ LAST UPDATED: 2026-07-31 (E22 MONUMENT ALIGNMENT LAYER — the last feature left mid-flight, now shipped.
+   Followed review→research→plan→revise→ship; the research was already done and locked in HANDOFF §3
+   (bearing math verified, three sites cited), so this session was plan → build → verify.
+
+   WHAT IT DOES. For each cited site it compares the MEASURED axis azimuth against the great-circle bearing
+   to today's pole AND to the pole currently set, showing both residuals side by side and letting the reader
+   draw the conclusion. Monument axes are LINES, not rays, so the residual folds to 0–90°:
+   d = |((az − bearing + 180) mod 360) − 180|; residual = min(d, 180 − d).
+
+   THE THREE HONESTY POINTS — these are the REASON the layer exists, do not quietly soften them:
+   (1) Giza already matches TODAY'S pole to 0.067° (four arcminutes; Dash 2017). Any large pole shift after
+       ~2500 BC would have left a residual of DEGREES, so the monument data CONSTRAINS a recent shift to be
+       near-zero. This is the one layer in the engine whose data argues against the premise, and it is shown
+       for exactly that reason. Mainstream reading (also stated in the caveats): even that 0.067° is surveying
+       method — a consistent CCW rotation across all three large pyramids, consistent with a fall-equinox
+       shadow method; Spence 2000 dates the alignment to ~2467 BC by stellar transit.
+   (2) Giza ALSO "aligns" with the ECDO pole to 0.255° — and that is a trap, not evidence. ECDO puts its pole
+       at 31°E; Giza sits at 31.13°E, essentially the same meridian, and a N–S axis points at ANYTHING on its
+       own meridian whatever that thing's latitude. The panel flags this (⚠ same meridian) whenever
+       |Δlon| < 2°. This is a check ECDOview does not appear to make and is the most valuable thing the layer
+       demonstrates.
+   (3) Only CARDINAL-aimed sites can test a pole at all. Göbekli Tepe (Enclosure D) is a proposed STELLAR
+       alignment and Teotihuacán's ~15.5° E-of-N offset is DELIBERATE (Šprajc; solar/calendrical). Neither is
+       scored as pole evidence — both are drawn in grey and labelled "not a pole indicator", and the white
+       bearing line is drawn ONLY for cardinal sites, because drawing it at a stellar site would imply its
+       axis is being scored against the pole.
+   THREE CITED SITES ONLY. Do not invent azimuths to pad the list — a residual is only as good as the
+   published azimuth behind it, and a short sourced list beats ECDOview's 69 unsourced ones.
+
+   VERIFICATION. Four oracles, cross-checked in Python and in-browser, identical to the digit: bearing to
+   today's pole = 0.000° from every site (as it must be); Giza vs today = 0.067° (reproduces Dash 2017 — the
+   proof the whole chain is right, and the regression oracle to re-run after any change here); Giza vs the
+   ECDO pole (−14, 31) = 0.255° with the same-meridian flag firing at Δlon 0.13°; a control pole (45N, 100W)
+   = 32.16° with no flag. Also verified: share-link round-trip in both directions (generation encodes
+   +monumentAlign, restore applies it), bundle wiring (established OFF / everything ON / clear OFF), clean
+   off-state (count 0, panel emptied, labels hidden), needles visibly rendering N–S at Giza and Göbekli Tepe
+   with the projected labels landing on the correct geography, and ZERO console errors.
+
+   IMPLEMENTATION. Follows the E9–E16 pattern exactly: one InstancedMesh through finalizeMarkerMesh(mesh, 11),
+   MAX_MONU = 32, count cleared when off, per-instance colour (parchment = cardinal axis, grey = context-only
+   axis, white = bearing to the set pole). renderMonumentAlignments() is a STANDALONE function called at the
+   end of computeEffects rather than another block inside it — it needs nothing from the Fibonacci site loop,
+   and the header is explicit that computeEffects should not be grown or split. Two things to know before
+   editing: the pole tested against is read back as R^-1·NORTH, NOT from shiftParams, so the residual tracks
+   the shift scrubber / shared links / story clock (all of which move R without touching shiftParams); and
+   initialBearing() takes TRUE east-longitude — latLonToDir() negates longitude for the texture-UV flip, and
+   that RENDERING convention must never reach the bearing math or every azimuth silently mirrors (only marker
+   placement goes through latLonToDir). Wired into fxContested (default OFF), STANDING_INFO (contested — the
+   measurements are fact, the inference that deviations record a pole shift is the contested part),
+   PLAIN_NAMES, the "Show everything" bundle, share links, a Model Caveats <li>, three legend rows, and
+   screen-projected site labels (same mechanism as #body-label). #monu-panel is deliberately a SIBLING of
+   .readout-adv, not a child, so the side-by-side comparison survives Simple mode — which is the whole point
+   of the layer and the reason it must not be tucked inside the advanced-only block.
+
+   TWO ADJACENT BUGS FIXED IN THE SAME PASS, both found while verifying: (a) LEGEND_PLAIN was keyed WITHOUT
+   the "(E9)…(E16)" build codes that the legend markup actually carries, so every coded legend row silently
+   failed to swap to plain language — the 2026-07-30 de-jargon pass stripped codes from control labels and
+   keyed the map to match, but left the codes in the legend markup; the matcher now tolerates a trailing code
+   and the restore path is unaffected (it still uses sp._origLeg). (b) #hint-chip had a hard-coded
+   bottom:64px tuned against the SHORT Simple-mode readout, so any taller readout — this panel, or Advanced
+   mode's full technical block with the map key open — slid underneath it; it now parks just above the
+   readout's measured top edge via positionHintChip(), called on show, on each 12s cycle, on resize, and
+   whenever the monument panel toggles.
+
+   Backup: archive/geo.html.pre-e22-2026-07-31.bak.
+   Prior: 2026-07-30 performance pass — see below.)
+
  LAST UPDATED: 2026-07-30 (PERFORMANCE PASS — followed review→research→plan. Diagnosis first: confirmed a real
    GPU (AMD RX 7700 XT via ANGLE/D3D11, not software rendering), so the low FPS seen earlier was NOT a code
    defect — the automation test tab reported document.hidden=true, and Chrome throttles requestAnimationFrame
