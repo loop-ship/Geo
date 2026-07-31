@@ -57,6 +57,48 @@
    startup now); ECDO preset regression clean. NOTE: could not get a trustworthy FPS delta from the
    automation environment — the test tab reported document.hidden=true, so Chrome throttled the render
    loop; a real FPS check must be done on a focused desktop tab (user action).
+ - 2026-07-31: OFF-CENTRE OPENING FRAME + E22 REACHABLE IN SIMPLE (user review). (1) FRAMING: the globe was
+   centred in the WHOLE viewport, but the viewport is not all free space — on desktop the settings drawer is a
+   permanent 320px dock, so a globe at W/2 sat visibly right of the centre of what you can actually see, and
+   its top crowded the title / scientific-standing band. Fixed with an OFF-AXIS PROJECTION
+   (camera.setViewOffset), NOT by moving the camera or the orbit target: the pivot stays at the globe's centre
+   so orbiting still feels right, raycasting (drag-to-set-pole) and .project() labels both follow the
+   projection matrix automatically, and nothing about the scene or the pole math changes. Shift left = half the
+   dock width, keyed to the 900px DOCK breakpoint and NOT to drawer-open (below it the drawer is a transient
+   overlay and the globe must not jump when the gear is tapped). Shift down = 5.5% of height, but CLAMPED by a
+   real circle-vs-rectangle clearance test against the readout block — the leftward shift moves the globe
+   TOWARD the bottom-left readout, so on a short landscape window the nudge shrinks itself instead of clipping
+   the text (measured clearances on 1662×718: standing key 35→95px, readout 10px by construction, title 176px,
+   drawer 411px; centre 831,359 → 671,398 = exactly the centre of the free width). Recomputed on resize —
+   unlike the opening DISTANCE, which stays startup-only so a deliberate pinch-zoom is never overridden; an
+   offset is framing, not zoom. The opening margin factor also eased 0.80→0.74 (globe ~8% smaller): without
+   that slack the clamp eats the downward nudge on common laptop sizes (1536×864 gives 18px instead of 45px;
+   1280×720 gives 2px instead of 24px). On 1080p the shrink buys nothing — revert to 0.80 if size is preferred
+   over movement. Both knobs are named: FRAME_DOWN_FRAC and the 0.74 in openingDistance().
+   NOT VISUALLY CONFIRMED HERE — screenshot capture failed repeatedly this session (script-injection and
+   renderer timeouts, with auto-rotate already off); the geometry above was verified numerically from the live
+   DOM rects instead. Worth an eyeball on a real focused tab.
+   (2) E22 REACHABILITY: the monument toggle moved from the "Debated" subfolder to the Consequences folder
+   ROOT and joined SIMPLE_FX_KEEP. Simple mode hides the three standing subfolders wholesale, which left
+   "Show everything" as the only route to it — burying a quiet two-number comparison under every other
+   contested/speculative layer at once. The move does NOT soften the grading: the ~ DEBATED chip rides on the
+   control itself (exactly like showEarthquakes, also a graded root-level control). The PANEL is now
+   mode-split: the residual numbers and the ⚠ same-meridian flag show in BOTH modes — they are the honest
+   signal and must never become a mode-gated extra — while the two prose paragraphs are .adv-note
+   (Advanced-only) and Simple gets a one-line version pointing at Model Caveats, where the full argument
+   lives either way. If you add anything to that panel, keep the numbers unconditional.
+   (3) MONUMENT NEEDLES WERE INVISIBLE — user: "monuments do not seem to be showing up". Root cause was NOT
+   logic (every number, toggle and label was already correct) but SIZE: the needle cross-section was 0.0035
+   WORLD units, and the globe is radius 1 rendered ~260 px at the opening frame, so the needles drew 0.9 px
+   wide — literally sub-pixel, and invisible over bright terrain. Cross-section 0.0035→0.013 (~3.4 px) and
+   lengths 0.11/0.17→0.17/0.25. LESSON FOR ANY FUTURE MARKER: these are world units on a unit sphere, so
+   multiply by ~260 to get pixels before assuming a marker reads; sub-pixel geometry renders as nothing.
+   (4) PROXIMITY-SCALED CONTROL SENSITIVITY — user: "tone down some touchiness" zoomed all the way in.
+   OrbitControls uses ONE rotate/zoom speed at every distance, but the same angular step sweeps far more
+   visible surface up close, so a gesture tuned at the opening frame feels twitchy against the globe. Speeds
+   now lerp with altitude above the surface: rotate 0.18→0.6 and zoom 0.34→1.0, reaching full by distance
+   2.25 — well inside the ~3.7 opening frame, so normal use is UNCHANGED and this only bites in the close-up
+   range. Same principle as the drag-to-set-pole retune: near the surface, small input must mean small change.
  - 2026-07-31: E22 MONUMENT ALIGNMENT LAYER — SHIPPED (was the one feature left mid-flight). Compares each
    cited site's MEASURED axis azimuth against the bearing to today's pole AND to the pole you've set, side by
    side. Standard great-circle forward azimuth; monument axes are LINES not rays, so the residual folds to
@@ -739,6 +781,11 @@
   #monu-panel .warn { color: var(--amber); }
   #monu-panel .note { color: var(--ink-dim); text-transform: none; letter-spacing: 0.03em;
                       white-space: normal; max-width: 46ch; margin-top: 3px; }
+  #monu-panel .note b { color: var(--cyan); font-weight: 600; }
+  /* the numbers + ⚠ flag show in both modes; only the prose reasoning is Advanced-only */
+  #monu-panel .simple-note { display: none; }
+  body.simple-mode #monu-panel .adv-note { display: none; }
+  body.simple-mode #monu-panel .simple-note { display: block; }
   /* projected site labels (same mechanism as #body-label — see updateMonumentLabels) */
   .monu-label {
     position: fixed; z-index: 3; display: none; pointer-events: none;
@@ -1423,20 +1470,84 @@ camera.position.set(2.1, 1.3, 2.4);
 // desktop reads as "too zoomed" in portrait. Pull back so the globe fits the SMALLER of the two FOV
 // dimensions with margin: desktop lands ~3.5 (i.e. unchanged), portrait phone ~7. Startup only — we never
 // yank the camera afterwards, so a deliberate pinch-zoom is never overridden.
-(function frameGlobe() {
+function openingDistance() {
   const aspect = window.innerWidth / Math.max(1, window.innerHeight);
   const vFov = THREE.MathUtils.degToRad(camera.fov);
   const hFov = 2 * Math.atan(Math.tan(vFov / 2) * aspect);
   const limit = Math.min(vFov, hFov);                 // whichever dimension clips first
-  const dist = GLOBE_R / Math.sin(Math.max(0.05, 0.80 * limit / 2));   // 0.80 = leave a comfortable margin
-  camera.position.setLength(THREE.MathUtils.clamp(dist, 1.4, 7.6));
-})();
+  // 0.74 = margin factor. Was 0.80; eased off in 2026-07-31's framing pass so the globe no longer fills
+  // the free area edge-to-edge — it needs slack around it to be re-centred without touching the chrome.
+  const dist = GLOBE_R / Math.sin(Math.max(0.05, 0.74 * limit / 2));
+  return THREE.MathUtils.clamp(dist, 1.4, 7.6);
+}
+camera.position.setLength(openingDistance());
+
+// OPENING FRAME — OFF-CENTRE FRAMING (2026-07-31). The globe was centred in the WHOLE viewport, but the
+// viewport is not all free space: on desktop the settings drawer is a permanent 320px dock on the right,
+// so a globe centred at W/2 sits visibly right of the centre of the space you can actually see, and its
+// top crowds the title / scientific-standing band. Fixed with an off-axis projection (camera.setViewOffset)
+// rather than by moving the camera or the orbit target — the pivot stays at the globe's centre, so orbiting
+// still feels right and nothing about the scene or the pole math changes. Purely where the same image lands.
+//   • HORIZONTAL: shift left by half the dock width so the globe centres in (W − dock) instead of W. Keyed
+//     to the 900px DOCK breakpoint, not to drawer-open — below it the drawer is a transient overlay and the
+//     globe must NOT jump when you tap the gear.
+//   • VERTICAL: nudge down, clamped by the slack actually available, so a short landscape window (where the
+//     globe nearly fills the height) shifts little or not at all instead of running off the bottom.
+// Recomputed on resize — unlike the opening DISTANCE, which stays startup-only so a deliberate
+// pinch-zoom is never overridden. An offset is framing, not zoom, so re-deriving it is safe.
+const FRAME_DOWN_FRAC = 0.055;   // of viewport height, before clamping
+const FRAME_EDGE_PX = 12;        // never park the globe closer than this to the bottom edge
+const FRAME_CHROME_PX = 10;      // …or to the readout block
+function applyFrameOffset() {
+  const W = window.innerWidth, H = Math.max(1, window.innerHeight);
+  const docked = window.matchMedia('(min-width: 900px)').matches;
+  const dx = (docked ? Math.min(320, W * 0.88) : 0) / 2;
+  // on-screen radius of the globe at the OPENING distance (not the live one, so zooming never re-frames)
+  const theta = Math.asin(Math.min(0.999, GLOBE_R / openingDistance()));
+  const rPx = (H / 2) * Math.tan(theta) / Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2);
+  const cx = W / 2 - dx;
+  // The bottom-left is NOT free — the readout lives there, and the leftward shift above moves the globe
+  // TOWARD it. So clamp the downward nudge by the actual circle-vs-rectangle clearance against that block
+  // rather than by a flat margin: solve for the lowest centre whose circle still misses the readout's
+  // top-right corner. On a tall window this never binds; on a short landscape one it is what stops the
+  // globe's lower-left arc from sitting on the text.
+  let maxCy = Infinity;
+  const ro = document.getElementById('readout');
+  if (ro) {
+    const b = ro.getBoundingClientRect();
+    const need = rPx + FRAME_CHROME_PX;
+    const gap = Math.max(0, cx - b.right);            // 0 when the centre sits over the readout's span
+    const lim = need * need - gap * gap;
+    maxCy = b.top - (lim > 0 ? Math.sqrt(lim) : 0);
+  }
+  const dy = Math.max(0, Math.min(FRAME_DOWN_FRAC * H, maxCy - H / 2, H / 2 - rPx - FRAME_EDGE_PX));
+  camera.setViewOffset(W, H, dx, -dy, W, H);   // +x shifts the image left; −y shifts it down
+}
+applyFrameOffset();
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 controls.dampingFactor = 0.06;
 controls.minDistance = 1.25;
 controls.maxDistance = 8;
 controls.rotateSpeed = 0.6;
+
+// PROXIMITY-SCALED SENSITIVITY (2026-07-31b, user: "tone down some touchiness" when zoomed all the way in).
+// OrbitControls uses ONE rotate/zoom speed at every distance, but the same angular step sweeps far more
+// visible surface when you are close to it — so a gesture that feels right at the opening frame feels
+// twitchy pressed up against the globe. Same lesson as the drag-to-set-pole retune: near the surface, a
+// small input must mean a small change. Speeds now ramp with ALTITUDE ABOVE THE SURFACE (d − GLOBE_R),
+// reaching full speed by the time you are a globe-radius out, which is well inside the opening frame
+// (~3.7) so normal use is completely unchanged — this only bites in the close-up range.
+const NEAR_ROTATE = 0.18, FAR_ROTATE = 0.6;    // rotateSpeed at min distance vs. out at the opening frame
+const NEAR_ZOOM   = 0.34, FAR_ZOOM   = 1.0;    // zoomSpeed likewise (1.0 = the OrbitControls default)
+const SENS_FULL_AT = 2.25;                     // distance from centre at which speeds reach full
+function updateControlSensitivity() {
+  const d = camera.position.length();
+  const t = THREE.MathUtils.clamp((d - controls.minDistance) / Math.max(0.01, SENS_FULL_AT - controls.minDistance), 0, 1);
+  controls.rotateSpeed = THREE.MathUtils.lerp(NEAR_ROTATE, FAR_ROTATE, t);
+  controls.zoomSpeed   = THREE.MathUtils.lerp(NEAR_ZOOM,   FAR_ZOOM,   t);
+}
+updateControlSensitivity();
 
 // ---------- lights ----------
 worldScene.add(new THREE.AmbientLight(0x3a5566, 0.55));
@@ -2558,8 +2669,13 @@ function meridianSeparation(lonA, lonB) {
 
 // Needle geometry: unit length along +Z, centred (so it reads as a LINE through the site, not a ray).
 // Per-instance scale sets the length; per-instance colour sets the three roles above.
+// SIZING (fixed 2026-07-31b — the layer looked "not showing up"): these are WORLD units on a globe of
+// radius 1, which at the default opening frame is ~260 px on screen. The first cut used a 0.0035 cross
+// section = 0.9 px, i.e. literally sub-pixel, so the needles were invisible over bright terrain even
+// though everything else about the layer was correct. Keep the cross section above ~0.010 (~3 px) — if
+// you ever change the opening distance, re-check this number rather than assuming it still reads.
 const MAX_MONU = 32;                                     // 2 lines/site with room to add cited sites
-const monuGeo = new THREE.BoxGeometry(0.0035, 0.0022, 1);
+const monuGeo = new THREE.BoxGeometry(0.013, 0.007, 1);
 const monuMesh = finalizeMarkerMesh(new THREE.InstancedMesh(
   monuGeo, new THREE.MeshBasicMaterial(), MAX_MONU       // per-instance colour via setColorAt
 ), 11);
@@ -3073,8 +3189,8 @@ const _monuX   = new THREE.Vector3();   // basis helper
 const _monuB   = new THREE.Matrix4();
 const _monuPole = new THREE.Vector3();
 const _monuSites = [];                  // { el, dir (world), radius } for the projected labels
-const MONU_AXIS_LEN = 0.11;             // world units (~3° of arc); the measured monument axis
-const MONU_BRG_LEN  = 0.17;             // longer so it stays readable when it nearly coincides with the axis
+const MONU_AXIS_LEN = 0.17;             // world units (~44 px at the opening frame); the measured monument axis
+const MONU_BRG_LEN  = 0.25;             // longer so it stays readable when it nearly coincides with the axis
 
 function fmtResidual(d) { return (d < 1 ? d.toFixed(3) : d.toFixed(2)) + '°'; }
 
@@ -3164,15 +3280,21 @@ function renderMonumentAlignments() {
   if (rm) rm.textContent = headline || '—';
 
   if (panel) {
+    // The NUMBERS and the ⚠ flag show in both modes — they are the honest signal and must never be a
+    // mode-gated extra. Only the PROSE reasoning behind them is Advanced-only (.adv-note); Simple gets a
+    // one-line version pointing at Model Caveats, where the full argument lives either way.
     let html = '<div class="hdr">MONUMENT ALIGNMENTS <i>— measured axis vs. bearing to the pole, folded to 0–90°</i></div>' + rows.join('');
     if (warned) {
-      html += '<div class="note"><span class="warn">⚠</span> ' + warned.name + ' sits on the set pole\'s meridian ' +
+      html += '<div class="note adv-note"><span class="warn">⚠</span> ' + warned.name + ' sits on the set pole\'s meridian ' +
         '(Δlon ' + warned.dLon.toFixed(2) + '°). A north–south axis points at <i>anything</i> on its own meridian ' +
         'whatever that thing\'s latitude — so this match is geometry, not evidence.</div>';
     }
-    html += '<div class="note">Giza already matches <i>today\'s</i> pole to 0.067° (Dash 2017). A large shift ' +
+    html += '<div class="note adv-note">Giza already matches <i>today\'s</i> pole to 0.067° (Dash 2017). A large shift ' +
       'after ~2500 BC would have left degrees of residual — so this data constrains a recent shift to near-zero. ' +
       'Mainstream reading: the residual is surveying method, not pole motion.</div>';
+    html += '<div class="note simple-note">Giza already points at <i>today\'s</i> pole to 0.067°' +
+      (warned ? ', and its match to this pole is a same-meridian coincidence' : '') +
+      '. Why that matters: <b>Honest limitations</b>.</div>';
     panel.innerHTML = html;
   }
   ensureMonumentLabels();
@@ -3265,6 +3387,12 @@ fxFolder.add(effectsParams, 'siteDensity', 600, 6000, 100).name('Site Density').
 fxFolder.add(effectsParams, 'volcTopPercent', 1, 15, 1).name('Volcano Top %').onChange(scheduleEffects);
 fxFolder.add(effectsParams, 'stressWeighted').name('Density ∝ Stress').onChange(computeEffects);
 fxFolder.add(effectsParams, 'gateToFaults').name('Gate to Faults').onChange(computeEffects);
+// E22 sits at the folder ROOT, not in the "Debated" subfolder below, so it is reachable in Simple mode —
+// the subfolders are hidden wholesale there, which left "Show everything" as the only route to it, burying
+// a quiet two-number comparison under every other contested/speculative layer at once. The move does NOT
+// soften its grading: the ~ DEBATED chip rides on the control itself (exactly like showEarthquakes above,
+// a graded root-level control), and the full reasoning stays in Model Caveats.
+fxFolder.add(effectsParams, 'monumentAlign').name('Monument Alignments').onChange(computeEffects);
 // CONDENSE (2026-07-29): regrouped from one flat 20-control list into subfolders by the SAME
 // scientific-standing tiers already assigned in STANDING_INFO below (walkControllers already
 // recurses into g.folders, so badges/plain-language still apply). Same controls, same property
@@ -3284,7 +3412,6 @@ fxEstablished.add(effectsParams, 'deglacMaxMult', 2, 50, 1).name('Max Eruption �
 fxEstablished.add(effectsParams, 'deglacAmplifyX', 2, 30, 1).name('Plume Threshold (×)').onChange(scheduleEffects);
 fxEstablished.add(effectsParams, 'giaRebound').name('GIA Rebound').onChange(computeEffects);
 fxEstablished.add(effectsParams, 'giaThreshold', 0.005, 0.2, 0.005).name('Rebound ΔCFS (MPa)').onChange(scheduleEffects);
-fxContested.add(effectsParams, 'monumentAlign').name('Monument Alignments').onChange(computeEffects);
 fxContested.add(effectsParams, 'solarCoupling').name('Solar Coupling').onChange(computeEffects);
 fxContested.add(effectsParams, 'solarFlux', 0, 1, 0.05).name('Proton Flux').onChange(scheduleEffects);
 fxEstablished.add(effectsParams, 'eqVolcCascade').name('EQ→Volcano Cascade').onChange(computeEffects);
@@ -4126,6 +4253,7 @@ controls.autoRotateSpeed = 0.6;
 // ---------- resize ----------
 addEventListener('resize', () => {
   camera.aspect = window.innerWidth / window.innerHeight;
+  applyFrameOffset();          // re-derive the off-centre framing (it already calls updateProjectionMatrix)
   camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth, window.innerHeight);
   resizeComposer();   // E21: keep the bloom/final composers matched to the canvas
@@ -4633,7 +4761,7 @@ function setUIMode(simple) {
   gui.controllers.forEach(c => {
     if (c && c.domElement) c.domElement.classList.toggle('adv-only', /Show Bulge|Show Spin Axis/.test(c._name || ''));
   });
-  const SIMPLE_FX_KEEP = /Show the established set|Show everything|Clear all|Detail \(marker density\)|Model Caveats|Honest limitations/;
+  const SIMPLE_FX_KEEP = /Show the established set|Show everything|Clear all|Detail \(marker density\)|Model Caveats|Honest limitations|Monument Alignments|monuments point/;
   fxFolder.controllers.forEach(c => {
     if (c && c.domElement) c.domElement.classList.toggle('adv-only', !SIMPLE_FX_KEEP.test(c._name || ''));
   });
@@ -4667,6 +4795,9 @@ document.getElementById('explain-close').addEventListener('click', () => {
 let _seenIntro = false;
 try { _seenIntro = localStorage.getItem('geo_seen_intro') === '1'; } catch (e) {}
 setUIMode(true);
+// Re-frame now that the mode is settled: Simple hides .readout-adv, so the readout block the framing
+// clamp measures is a different height than it was at module-eval time.
+applyFrameOffset();
 // A shared link restores its scenario on load. Done AFTER setUIMode so the GUI exists to be refreshed,
 // and it suppresses the first-run explainer — someone arriving via a link wants the view, not onboarding.
 let _fromSharedLink = false;
@@ -4822,6 +4953,7 @@ function tick() {
     uniforms.uLightDir.value.applyAxisAngle(_YAXIS, viewParams.sunSpeed * Math.PI / 180 * dt);
     _bodySun.position.copy(uniforms.uLightDir.value);                 // keep the body's key light in sync
   }
+  updateControlSensitivity();                       // orbit/zoom speed follows how close you are (cheap, 2 lerps)
   if (driverParams.enableBody) updateBodyLabel();   // E18: keep the label pinned to the body as the camera moves
   if (effectsParams.monumentAlign) updateMonumentLabels();   // E22: same reason — the camera moves independently
   if (cineActive()) { updateCine(t); renderCine(); }   // E21: cinematic path (Sun/CME/atmo/field-lines + selective bloom)

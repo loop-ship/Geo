@@ -303,6 +303,68 @@ history behind that, not a substitute for it.
 
 ## Part 2 — Session changelog (chronological, most recent first)
 
+ LAST UPDATED: 2026-07-31b (OFF-CENTRE OPENING FRAME + E22 REACHABLE IN SIMPLE MODE — both from user review
+   immediately after E22 shipped.
+
+   FRAMING. The globe was centred in the whole viewport, but the viewport is not all free space: on desktop
+   the settings drawer is a permanent 320px dock, so a globe centred at W/2 sits visibly right of the centre
+   of the area you can actually see, and its top crowds the title / scientific-standing band. Fixed with an
+   OFF-AXIS PROJECTION via camera.setViewOffset rather than by moving the camera or the orbit target — the
+   pivot stays at the globe's centre so orbiting still feels right, and raycasting (drag-to-set-pole) plus
+   .project()-based labels both ride the projection matrix and follow automatically. Horizontal shift = half
+   the dock width, keyed to the 900px DOCK breakpoint and deliberately NOT to drawer-open, because below that
+   breakpoint the drawer is a transient overlay and the globe must not jump when the gear is tapped. Vertical
+   shift = 5.5% of height, clamped by an actual circle-vs-rectangle clearance test against the readout block:
+   the leftward shift moves the globe TOWARD the bottom-left readout, so on a short landscape window the
+   downward nudge shrinks itself rather than clipping the text. Measured clearances at 1662×718 went from
+   ~35px to 95px at the standing-key band, with the readout held at exactly the 10px clamp target, title
+   176px and drawer 411px; the centre moved 831,359 → 671,398, which is exactly the centre of the free width.
+   Recomputed on resize, unlike the opening DISTANCE which stays startup-only so a deliberate pinch-zoom is
+   never overridden — an offset is framing, not zoom, so re-deriving it is safe. The opening margin factor
+   also eased 0.80→0.74, making the globe ~8% smaller: without that slack the clamp eats the downward nudge
+   at common laptop sizes (1536×864 yields 18px instead of 45px, 1280×720 yields 2px instead of 24px), though
+   on 1080p the shrink buys nothing and 0.80 can be restored if size matters more than movement. Both knobs
+   are named constants: FRAME_DOWN_FRAC and the 0.74 inside openingDistance().
+   NOT VISUALLY CONFIRMED — screenshot capture failed repeatedly this session (script-injection and renderer
+   timeouts, auto-rotate already off), so the geometry was verified numerically against the live DOM rects
+   instead. Worth an eyeball on a real focused tab.
+
+   E22 REACHABILITY. Simple mode hides the three standing subfolders wholesale, so the monument toggle —
+   which had been placed in "Debated" — was only reachable via "Show everything", burying a quiet two-number
+   comparison under every other contested and speculative layer at once. Moved to the Consequences folder
+   ROOT and added to SIMPLE_FX_KEEP. This does not soften the grading: the ~ DEBATED chip rides on the
+   control itself, exactly like showEarthquakes, which is likewise a graded root-level control, and the full
+   reasoning still lives in Model Caveats. The panel itself is now mode-split on the user's steer ("show the
+   monuments but not the advanced theoretical reasoning"): the residual numbers and the ⚠ same-meridian flag
+   render in BOTH modes — they are the honest signal and must never become a mode-gated extra — while the two
+   prose paragraphs are .adv-note and Simple gets a single line pointing at Honest limitations. Anything
+   added to that panel later should keep the numbers unconditional.
+
+   Also confirmed while answering a question about the repo's GitHub badge: the "HTML" label and its red dot
+   are not a judgement of the stack. GitHub Linguist attributes a file wholly to its detected language, and
+   geo.html carries all ~4,700 lines of JS inside a <script type="module"> block, so the repo reads as
+   HTML 344,613 bytes vs JavaScript 4,101 (sw.js alone). #e34c26 is simply Linguist's fixed colour for HTML.
+   A .gitattributes `linguist-language` override would relabel it, purely cosmetically; not done.
+
+   MONUMENT NEEDLES WERE INVISIBLE (reported as "monuments do not seem to be showing up"). The cause was not
+   logic — every number, toggle, label and colour was already correct and verified — but SIZE. Marker
+   dimensions are WORLD units on a globe of radius 1, which renders ~260 px across at the opening frame, so
+   the original 0.0035 cross-section drew 0.9 px wide: literally sub-pixel, and invisible over bright
+   terrain. Widened to 0.013 (~3.4 px) and lengthened from 0.11/0.17 to 0.17/0.25. The general lesson for any
+   future marker in this engine: multiply world units by ~260 to get pixels before assuming a marker reads at
+   all, because sub-pixel geometry renders as nothing rather than as something faint.
+
+   PROXIMITY-SCALED CONTROL SENSITIVITY ("tone down some touchiness" when zoomed all the way in).
+   OrbitControls applies one rotate and zoom speed at every distance, but the same angular step sweeps far
+   more visible surface when the camera is close to it, so a gesture tuned at the opening frame feels twitchy
+   pressed against the globe. Both speeds now lerp with altitude above the surface — rotate 0.18→0.6, zoom
+   0.34→1.0 — reaching full speed by distance 2.25, which is well inside the ~3.7 opening frame, so ordinary
+   use is completely unchanged and the slowdown only applies in the close-up range. This is the same
+   principle the drag-to-set-pole retune established: near the surface, a small input must mean a small
+   change.
+
+   Prior: 2026-07-31 E22 monument alignment layer — see below.)
+
  LAST UPDATED: 2026-07-31 (E22 MONUMENT ALIGNMENT LAYER — the last feature left mid-flight, now shipped.
    Followed review→research→plan→revise→ship; the research was already done and locked in HANDOFF §3
    (bearing math verified, three sites cited), so this session was plan → build → verify.

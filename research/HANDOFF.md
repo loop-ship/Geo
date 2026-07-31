@@ -119,6 +119,12 @@ bundle, share links (`+monumentAlign`), a Model Caveats `<li>`, three legend row
 site labels. `#monu-panel` is deliberately a **sibling** of `.readout-adv`, not a child, so the side-by-side
 comparison survives Simple mode.
 
+**Reachability (2026-07-31b, user review):** the toggle sits at the **Consequences folder root**, not in the
+"Debated" subfolder — Simple mode hides those subfolders wholesale, which left "Show everything" as the only
+route to it. The `~ DEBATED` chip rides on the control itself, so the grading is unchanged. The panel is
+mode-split: **the residual numbers and the ⚠ flag render in both modes** (they are the honest signal — never
+make them a mode-gated extra); only the prose paragraphs are `.adv-note`.
+
 **Two adjacent bugs fixed in the same pass:** `LEGEND_PLAIN` was keyed without the `(E9)…(E16)` codes the
 legend markup actually carries, so every coded legend row silently failed to swap to plain language (the
 matcher now tolerates a trailing code); and `#hint-chip` had a hard-coded `bottom:64px` tuned to the short
