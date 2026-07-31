@@ -57,6 +57,30 @@
    startup now); ECDO preset regression clean. NOTE: could not get a trustworthy FPS delta from the
    automation environment — the test tab reported document.hidden=true, so Chrome throttled the render
    loop; a real FPS check must be done on a focused desktop tab (user action).
+ - 2026-07-30: APPROACHABILITY PASS (first user review batch). FOUR changes, none of which touch physics,
+   layer behaviour, or the underlying grading of any claim — only what is EXPOSED BY DEFAULT and what the
+   labels SAY. (1) TERMINOLOGY: the displayed standing words are now established / DEBATED / UNVERIFIED,
+   and scenario badges state evidentiary status instead of applying a social label — Hapgood "historical
+   proposal · superseded", ECDO "independent hypothesis · not peer-reviewed", Zacharias "observational
+   claim · not independently verified"; "fringe"/"pseudoscience" are gone from ALL user-visible strings
+   (replaced by the specific reason, e.g. body→solar gate is now "no known mechanism", which is strictly
+   more informative). Rationale: those words span fraud→merely-unaccepted and mostly generate heat
+   (cf. American Scientist, "Stop Using the Word Pseudoscience"). The STANDING object KEYS are unchanged
+   internal ids, so every tier:'speculative' reference still works. The caveats panel still says plainly
+   that mainstream geophysics rejects rapid pole shift — the tier word is a summary, not the whole story.
+   (2) DE-JARGON: folders renamed to plain English (Consequences / Oceans & sea level / Passing body /
+   Solar storm / Climate belts / Visual quality …) and every (E9)-(E21) build code stripped from control
+   labels — codes live on in this header + CHANGELOG for developers. PLAIN_NAMES keys were updated in the
+   SAME pass so the two can't drift (verified: 0 orphaned keys). (3) SIMPLE MODE now HIDES the expert
+   panels via .adv-only + body.simple-mode CSS instead of merely collapsing them: 5 panels / 28 controls
+   vs Advanced's 10 / 67 (of 119 total). "Consequences" deliberately STAYS visible in Simple but shows only
+   the one-tap sets + Detail + Honest limitations. A dashed "Show all controls" button makes the way back
+   obvious. (4) FIRST-IMPRESSION DENSITY: default siteDensity 2600→1200 because ~2,200 markers at a large
+   shift reads as a solid shell that buries the terrain. This is SAMPLING RESOLUTION, not physics — proven
+   by test: Detail=High (2600) reproduces the old baseline EXACTLY (2,207 quakes / 62 volcanoes), so
+   nothing was removed, only defaulted down. New 'Detail (marker density)' dropdown (Low/Medium/High/
+   Maximum) is the one friendly knob replacing three expert sliders for newcomers.
+   Backup: archive/geo.html.pre-terminology-2026-07-30.bak.
  - 2026-07-30: PWA — INSTALLABLE + OFFLINE. New siblings: manifest.json (standalone, brand colours,
    start_url ./geo.html so home-screen launch skips the index redirect), icon-192/512/512-maskable.png
    (generated from earth_day.jpg = a real Earth disc on #05080d), and sw.js. SW strategy is deliberately
@@ -664,6 +688,16 @@
   }
   .legend-toggle:hover { color: #eaf4f8; }
   body.simple-mode .readout-adv { display: none; }
+  /* SIMPLE MODE (2026-07-30): hide the expert panels outright rather than merely collapsing them, so a
+     newcomer sees 4 panels instead of 13. Advanced restores everything (see setUIMode / .adv-only). */
+  body.simple-mode .lil-gui .adv-only { display: none; }
+  #show-all-controls {
+    display: none; width: calc(100% - 16px); margin: 8px; padding: 7px 10px; cursor: pointer;
+    background: transparent; border: 1px dashed var(--edge); border-radius: 6px;
+    color: var(--ink-dim); font: inherit; font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase;
+  }
+  #show-all-controls:hover { color: var(--cyan); border-color: var(--cyan); }
+  body.simple-mode #show-all-controls { display: block; }
   #simple-readout { display: none; font-size: 12px; color: var(--ink); margin-bottom: 2px; line-height: 1.5; }
   #simple-readout b { color: var(--cyan); font-weight: 600; }
   body.simple-mode #simple-readout { display: block; }
@@ -817,6 +851,8 @@
 <div id="gui-drawer">
   <div id="gui-drawer-head"><span>Controls</span><button id="gui-drawer-close" aria-label="Close controls">×</button></div>
   <div id="gui-drawer-body"></div>
+  <!-- Simple mode hides the expert panels; this makes the way back obvious (Simple/Advanced switch also works) -->
+  <button id="show-all-controls" title="Show every control">⚙ Show all controls</button>
 </div>
 
 <div id="title" class="hud">
@@ -843,7 +879,7 @@
   <p class="lead">This is a <b>“what-if” globe</b>. You pick where Earth’s North Pole moves to, and the simulator slides the whole crust to match — then shows the consequences as honestly as it can.</p>
   <p><b>The colours:</b> teal = land that is newly under water · tan = old seabed now exposed · green = dry land · blue = ocean. As you change the pole, water finds its new level and the map repaints.</p>
   <p><b>The marks:</b> red dots are places more likely to have earthquakes; orange triangles are volcanoes that could become more active. They appear where the shift changes the stress on the ground <i>enough to matter</i>.</p>
-  <p class="foot">It is <b>not a prediction.</b> It shows where stress is nudged enough to be worth noticing, using deliberately simple physics. The small <b>✓ ~ ?</b> badges say how solid each effect is: ✓ established, ~ contested, ? speculative. Turn on <b>Plain language</b> to relabel the controls, or open <b>Honest limitations</b> for the detail.</p>
+  <p class="foot">It is <b>not a prediction.</b> It shows where stress is nudged enough to be worth noticing, using deliberately simple physics. The small <b>✓ ~ ?</b> badges say how solid each effect is: ✓ established, ~ debated, ? unverified. Turn on <b>Plain language</b> to relabel the controls, or open <b>Honest limitations</b> for the detail.</p>
 </div>
 
 <div id="scenario">
@@ -994,7 +1030,7 @@
       rigidity→0). Faulting is placed at unloaded sites where the rebound ΔCFS exceeds the threshold (~0.01 MPa).
       The Mw 7.9-vs-8.2 figures themselves conflict in the literature — read the cubes as illustrative great-
       earthquake potential during rebound, not a dated sequence, and recall the real lag spans centuries.</li>
-    <li><b>Solar-seismic coupling (E13) is contested-to-fringe.</b> Some statistical work links solar/proton
+    <li><b>Solar-seismic coupling (E13) is debated, and the weakest-supported layer here.</b> Some statistical work links solar/proton
       forcing to seismicity — proton flux tracking up to 23–28% of M6.5+ intensity with a ~18-day decay and a
       ~26.6-day solar-rotation period (Lyubushin &amp; Rodionov 2025), coronal-hole high-speed streams in the
       solar-cycle decay phase (Anagnostopoulos 2021), a 2–7-day lag after current pulses with the Sept-2017 X9.3
@@ -1062,7 +1098,7 @@
       compression drives quakes is not. The <i>eclipse</i> is <b>speculative</b>: the body's angular size only
       reaches the Sun's ~0.53° for a Moon-sized body at the Moon's distance, and multi-day totality would
       require something so large and close it would be one of the brightest objects in the sky for weeks
-      beforehand. And the <i>body→solar</i> gate is the <b>most fringe</b> link of all — the only peer-reviewed
+      beforehand. And the <i>body→solar</i> gate is the <b>least supported</b> link of all, with no known mechanism — the only peer-reviewed
       adjacent work is planetary tides faintly <i>pacing</i> the ~11-year solar cycle (Stefani 2016/2019), not
       triggering flares on demand. All four are off by default and badged separately, so the engine shows the
       mechanism without endorsing it.</li>
@@ -1889,22 +1925,26 @@ applyExag();
 //  is arbitrary — shipped and labelled accordingly).
 // ============================================================
 const STANDING = {
+  // WORDING (2026-07-30): the displayed words state EVIDENTIARY STATUS rather than applying a social
+  // label ("fringe"/"pseudoscience"), which is more precise, not softer — those terms span everything
+  // from fraud to merely-lacking-consensus and mostly generate heat. The object KEYS are unchanged
+  // internal ids, so every existing tier:'speculative' reference keeps working untouched.
   established: { color: '#36c9b0', icon: '✓', word: 'established' },
-  contested:   { color: '#e8a33d', icon: '~', word: 'contested' },
-  speculative: { color: '#b48cff', icon: '?', word: 'speculative' },
+  contested:   { color: '#e8a33d', icon: '~', word: 'debated' },
+  speculative: { color: '#b48cff', icon: '?', word: 'unverified' },
 };
 const SCENARIOS = [
-  { id: 'hapgood', label: 'Hapgood — Hudson Bay', standing: 'speculative', standingWord: 'pseudoscience (historical)',
+  { id: 'hapgood', label: 'Hapgood — Hudson Bay', standing: 'speculative', standingWord: 'historical proposal · superseded',
     pole: { lat: 60, lon: -73 }, shiftAngleDeg: 30, bulgeRigidity: 1.0,
     layers: { showEarthquakes: true, showVolcanoes: true, faultStyle: true },
     camera: { lat: 35, lon: -73, distance: 3.0 },
     caption: "Hapgood's crustal-displacement idea (1958/1970): the lithosphere slips ~30° so Hudson Bay becomes the new North Pole. The mechanism is rejected by mainstream geophysics — shown as a scenario, not a forecast." },
-  { id: 'ecdo', label: 'ECDO — Zambia (104°)', standing: 'speculative', standingWord: 'fringe',
+  { id: 'ecdo', label: 'ECDO — Zambia (104°)', standing: 'speculative', standingWord: 'independent hypothesis · not peer-reviewed',
     pole: { lat: -14, lon: 31 }, shiftAngleDeg: 104, bulgeRigidity: 1.0,
     layers: { showEarthquakes: true, showVolcanoes: true, faultStyle: true },
     camera: { lat: 0, lon: 31, distance: 3.2 },
-    caption: "The ECDO scenario: a 104° flip along the 31°E meridian to ~14°S/31°E (southern Zambia), via a claimed core-mantle 'Dzhanibekov' tumble. Fringe; the engine stays cause-agnostic and just shows the kinematics." },
-  { id: 'zacharias', label: 'Zacharias — Gulf of Guinea', standing: 'speculative', standingWord: 'speculative · observational (secondary-sourced)',
+    caption: "The ECDO scenario: a 104° flip along the 31°E meridian to ~14°S/31°E (southern Zambia), via a claimed core-mantle 'Dzhanibekov' tumble. An independently-developed hypothesis (The Ethical Skeptic), not peer-reviewed and outside mainstream geophysics — the engine stays cause-agnostic and just shows the kinematics." },
+  { id: 'zacharias', label: 'Zacharias — Gulf of Guinea', standing: 'speculative', standingWord: 'observational claim · not independently verified',
     pole: { lat: -0.8, lon: 2 }, shiftAngleDeg: 90.8, bulgeRigidity: 1.0,
     layers: { showEarthquakes: true, showVolcanoes: true },
     camera: { lat: 0, lon: 2, distance: 3.2 },
@@ -1914,16 +1954,16 @@ const SCENARIOS = [
 // RESPONSIVE DRAWER (2026-07-30): render the panel INSIDE #gui-drawer-body instead of auto-floating
 // top-right. autoPlace:false + container is the sanctioned lil-gui relocation; every downstream ref
 // (addFolder, walkControllers, applyStandingBadges, _advFolders/_simpleOpen, setUIMode) is unchanged.
-const gui = new GUI({ title: 'KINEMATIC CORE', autoPlace: false, container: document.getElementById('gui-drawer-body') });
+const gui = new GUI({ title: 'Controls', autoPlace: false, container: document.getElementById('gui-drawer-body') });
 // SCENARIOS folder sits at the TOP of the panel (created first). Buttons call applyPreset (defined below).
-const scenarioFolder = gui.addFolder('SCENARIOS (presets)');
+const scenarioFolder = gui.addFolder('Scenarios');
 SCENARIOS.forEach(p => scenarioFolder.add({ go: () => applyPreset(p) }, 'go').name('▸ ' + p.label));
 scenarioFolder.add({ clear: () => hideScenario() }, 'clear').name('Clear caption (keep state)');
 scenarioFolder.open();
 // A2 — guided story entry point (transport is the bottom bar; startStory defined below, hoisted).
-const storyFolder = gui.addFolder('GUIDED STORY');
+const storyFolder = gui.addFolder('Guided story');
 storyFolder.add({ play: () => startStory(STORY) }, 'play').name('▶ Play guided story');
-storyFolder.add({ drive: () => startStory(STORY_DRIVER) }, 'drive').name('▶ Play driver sequence (E20)');
+storyFolder.add({ drive: () => startStory(STORY_DRIVER) }, 'drive').name('▶ Play driver sequence');
 storyFolder.open();
 gui.add(params, 'verticalExaggeration', 1, 50, 1).name('Vert. Exaggeration').onChange(applyExag);
 gui.add(params, 'showBulge').name('Show Bulge (rigid)').onChange(v => { bulge.visible = v; });
@@ -1931,7 +1971,7 @@ gui.add(params, 'showAxis').name('Show Spin Axis').onChange(v => { spinAxis.visi
 gui.add(params, 'autoRotate').name('Auto-rotate view').onChange(v => { controls.autoRotate = v; });
 
 // ---- Stage 2: pole-shift controls ----
-const poleFolder = gui.addFolder('POLE SHIFT (Stage 2)');
+const poleFolder = gui.addFolder('Pole shift');
 poleFolder.add(shiftParams, 'newPoleLat', -90, 90, 1).name('New Pole Lat').onChange(updateShift);
 poleFolder.add(shiftParams, 'newPoleLon', -180, 180, 1).name('New Pole Lon').onChange(updateShift);
 poleFolder.add(shiftParams, 'showOldPole').name('Show Old Pole →').onChange(v => { oldPoleMarker.visible = v; oldPoleStalk.visible = v; });
@@ -2015,7 +2055,7 @@ const waterParams = {
   relaxSeconds: 6,      // ENHANCEMENT: wall-clock duration of the "relax bulge over time" animation
   seaLevel: 0,          // ENHANCEMENT: uniform global sea-level offset in metres (ice-melt / drawdown scenario, separate from the bulge)
 };
-const waterFolder = gui.addFolder('WATER (Stage 3)');
+const waterFolder = gui.addFolder('Oceans & sea level');
 waterFolder.add(waterParams, 'showWater').name('Water Model').onChange(v => { uniforms.uShowWater.value = v ? 1.0 : 0.0; });
 const bulgeCtrl = waterFolder.add(waterParams, 'bulgeRigidity', 0, 1, 0.01).name('Bulge Rigidity').onChange(v => {
   relaxAnim = null;     // a manual change cancels any running relaxation
@@ -2169,7 +2209,11 @@ const effectsParams = {
   showStressOverlay: false,   // continuous fragment overlay (off by default; markers tell the story)
   showEarthquakes: true,
   showVolcanoes: true,
-  siteDensity: 2600,          // Fibonacci samples over the whole sphere
+  // FIRST-IMPRESSION DENSITY (2026-07-30): was 2600, which at a large shift draws ~2,200 quake markers —
+  // a solid shell that buries the terrain and reads as alarming rather than informative. This is a
+  // SAMPLING-RESOLUTION knob, not a physics one: the stress field and its pattern are identical, we just
+  // draw fewer sample points from it. Slider still reaches 6000 for the dense look (see the Detail control).
+  siteDensity: 1200,          // Fibonacci samples over the whole sphere
   volcTopPercent: 6,          // strongest N% of UNLOADING sites become volcanoes
   stressWeighted: true,       // ENHANCEMENT: thin quake markers by stress so density reflects the field, not the lattice
   depthAttenuation: false,    // ENHANCEMENT: attenuate stress from surface to seismogenic depth (opt-in)
@@ -2665,7 +2709,7 @@ function toggleDisclosure() {
 }
 
 // ---- Stage 5: effects controls ----
-const fxFolder = gui.addFolder('EFFECTS (Stage 5)');
+const fxFolder = gui.addFolder('Consequences');
 // FRIENDLY-MODE (UX): one-tap effect BUNDLES at the top of the dropdown. They set the whole group; the
 // individual toggles below still work. Essential = the established core; Full chain = everything (incl.
 // contested/speculative, minus the unsupported deep-preference); None = clear. (Comprehension pass.)
@@ -2684,9 +2728,19 @@ function setEffectBundle(name) {
   walkControllers(gui, c => c.updateDisplay && c.updateDisplay());   // reflect the group change on every control
   computeEffects();
 }
-fxFolder.add({ go: () => setEffectBundle('essential') }, 'go').name('◆ Preset · Essential (established)');
-fxFolder.add({ go: () => setEffectBundle('full') }, 'go').name('◆ Preset · Full chain');
-fxFolder.add({ go: () => setEffectBundle('none') }, 'go').name('◇ Preset · None');
+fxFolder.add({ go: () => setEffectBundle('essential') }, 'go').name('◆ Show the established set');
+fxFolder.add({ go: () => setEffectBundle('full') }, 'go').name('◆ Show everything');
+fxFolder.add({ go: () => setEffectBundle('none') }, 'go').name('◇ Clear all');
+// DETAIL (2026-07-30): one friendly knob for "how many markers", instead of making a newcomer find
+// three expert sliders (Site Density / Volcano Top % / Density ∝ Stress). Pure sampling resolution —
+// the physics and the pattern are unchanged, only how densely we draw it. Advanced keeps all three.
+const detailParams = { detail: 'Medium' };
+const DETAIL_SITES = { Low: 700, Medium: 1200, High: 2600, Maximum: 4500 };
+fxFolder.add(detailParams, 'detail', Object.keys(DETAIL_SITES)).name('Detail (marker density)').onChange(v => {
+  effectsParams.siteDensity = DETAIL_SITES[v] || 1200;
+  walkControllers(gui, c => c.updateDisplay && c.updateDisplay());   // keep the Site Density slider in sync
+  computeEffects();
+});
 fxFolder.add(effectsParams, 'showStressOverlay').name('Stress-Δ Overlay').onChange(v => { uniforms.uShowStress.value = v ? 1.0 : 0.0; });
 fxFolder.add(effectsParams, 'showEarthquakes').name('Earthquakes').onChange(computeEffects);
 fxFolder.add(effectsParams, 'showVolcanoes').name('Volcanoes').onChange(computeEffects);
@@ -2699,27 +2753,27 @@ fxFolder.add(effectsParams, 'gateToFaults').name('Gate to Faults').onChange(comp
 // recurses into g.folders, so badges/plain-language still apply). Same controls, same property
 // keys, same onChange handlers, same .name() label text (Plain Language matches by label, so
 // labels are left byte-identical to before) — purely a grouping change, no behavior change.
-const fxEstablished = fxFolder.addFolder('Established');
-const fxContested = fxFolder.addFolder('Contested');
-const fxSpeculative = fxFolder.addFolder('Speculative');
-fxEstablished.add(effectsParams, 'dynamicTrigger').name('Global Dynamic Trigger (E9)').onChange(computeEffects);
+const fxEstablished = fxFolder.addFolder('Established science');
+const fxContested = fxFolder.addFolder('Debated');
+const fxSpeculative = fxFolder.addFolder('Unverified');
+fxEstablished.add(effectsParams, 'dynamicTrigger').name('Global Dynamic Trigger').onChange(computeEffects);
 fxContested.add(effectsParams, 'antipodalBonus').name('Antipodal Bonus (contested)').onChange(computeEffects);
 fxContested.add(effectsParams, 'antipodalCap', 10, 60, 5).name('Antipodal Cap (°)').onChange(scheduleEffects);
 fxSpeculative.add(effectsParams, 'deepPreference').name('Deep Pref (speculative)').onChange(computeEffects);
-fxContested.add(effectsParams, 'lodModulation').name('LOD Modulation (E10)').onChange(computeEffects);
+fxContested.add(effectsParams, 'lodModulation').name('LOD Modulation').onChange(computeEffects);
 fxContested.add(effectsParams, 'lodSlowing', 0, 1, 0.05).name('Rotational Slowing').onChange(scheduleEffects);
-fxEstablished.add(effectsParams, 'deglaciationMult').name('Deglaciation Mult. (E11)').onChange(computeEffects);
+fxEstablished.add(effectsParams, 'deglaciationMult').name('Deglaciation Mult.').onChange(computeEffects);
 fxEstablished.add(effectsParams, 'deglacMaxMult', 2, 50, 1).name('Max Eruption ×').onChange(scheduleEffects);
 fxEstablished.add(effectsParams, 'deglacAmplifyX', 2, 30, 1).name('Plume Threshold (×)').onChange(scheduleEffects);
-fxEstablished.add(effectsParams, 'giaRebound').name('GIA Rebound (E12)').onChange(computeEffects);
+fxEstablished.add(effectsParams, 'giaRebound').name('GIA Rebound').onChange(computeEffects);
 fxEstablished.add(effectsParams, 'giaThreshold', 0.005, 0.2, 0.005).name('Rebound ΔCFS (MPa)').onChange(scheduleEffects);
-fxContested.add(effectsParams, 'solarCoupling').name('Solar Coupling (E13)').onChange(computeEffects);
+fxContested.add(effectsParams, 'solarCoupling').name('Solar Coupling').onChange(computeEffects);
 fxContested.add(effectsParams, 'solarFlux', 0, 1, 0.05).name('Proton Flux').onChange(scheduleEffects);
-fxEstablished.add(effectsParams, 'eqVolcCascade').name('EQ→Volcano Cascade (E14)').onChange(computeEffects);
+fxEstablished.add(effectsParams, 'eqVolcCascade').name('EQ→Volcano Cascade').onChange(computeEffects);
 fxEstablished.add(effectsParams, 'cascadeMagFloor', 0.2, 0.95, 0.05).name('Cascade Mag Floor').onChange(scheduleEffects);
-fxEstablished.add(effectsParams, 'faultStyle').name('Fault Style (E15)').onChange(computeEffects);
+fxEstablished.add(effectsParams, 'faultStyle').name('Fault Style').onChange(computeEffects);
 fxEstablished.add(effectsParams, 'faultSlipBand', 0.005, 0.2, 0.005).name('Strike-slip Band').onChange(scheduleEffects);
-fxEstablished.add(effectsParams, 'flankCollapse').name('Flank-Collapse Tsunami (E16)').onChange(computeEffects);
+fxEstablished.add(effectsParams, 'flankCollapse').name('Flank-Collapse Tsunami').onChange(computeEffects);
 fxEstablished.add(effectsParams, 'maxTsunamiReachKm', 100, 1500, 50).name('Max Tsunami Reach (km)').onChange(scheduleEffects);
 fxFolder.add(effectsParams, 'depthAttenuation').name('Depth Attenuation').onChange(() => { updateAtten(); scheduleEffects(); });
 fxFolder.add(effectsParams, 'seisDepthKm', 1, 40, 1).name('Seismo Depth (km)').onChange(() => { updateAtten(); scheduleEffects(); });
@@ -2733,8 +2787,8 @@ fxFolder.open();
 // by the NEW belt, or highlights only the crust that CROSSED a belt. Established for the instantaneous
 // insolation map; ocean/ice response lags centuries-millennia (see Model Caveats). Off by default.
 const climateParams = { showClimate: false, changeMode: false };
-const climateFolder = gui.addFolder('CLIMATE (Mechanism 6)');
-climateFolder.add(climateParams, 'showClimate').name('Climate Zones (E17)').onChange(v => { uniforms.uShowClimate.value = v ? 1.0 : 0.0; });
+const climateFolder = gui.addFolder('Climate belts');
+climateFolder.add(climateParams, 'showClimate').name('Climate Zones').onChange(v => { uniforms.uShowClimate.value = v ? 1.0 : 0.0; });
 climateFolder.add(climateParams, 'changeMode').name('Show Belt Crossings').onChange(v => { uniforms.uClimateMode.value = v ? 1.0 : 0.0; });
 
 // ============================================================
@@ -2860,8 +2914,8 @@ function updateBody() {
   updateBodyReadout(); updateBodyLabel();
   scheduleEffects();   // body ΔCFS feeds E1, so the quake field must follow
 }
-const bodyFolder = gui.addFolder('DRIVER · BODY (E18)');
-bodyFolder.add(driverParams, 'enableBody').name('Perturbing Body (E18)').onChange(updateBody);
+const bodyFolder = gui.addFolder('Passing body');
+bodyFolder.add(driverParams, 'enableBody').name('Perturbing Body').onChange(updateBody);
 bodyFolder.add(driverParams, 'massMoon', 0.1, 500, 0.1).name('Mass (Moons)').onChange(updateBody);
 bodyFolder.add(driverParams, 'perihelionLD', 0.05, 10, 0.05).name('Perihelion (lunar dist)').onChange(updateBody);
 bodyFolder.add(driverParams, 'eccentricity', 0.0, 0.97, 0.01).name('Eccentricity').onChange(updateBody);
@@ -2973,15 +3027,15 @@ function updateStorm() {
   updateStormReadout();
   scheduleEffects();   // E13 amplitude depends on the envelope, so the quake field must follow
 }
-const stormFolder = gui.addFolder('DRIVER · SOLAR STORM (E19)');
-stormFolder.add(stormParams, 'enableStorm').name('Proton-Flux Storm (E19)').onChange(updateStorm);
+const stormFolder = gui.addFolder('Solar storm');
+stormFolder.add(stormParams, 'enableStorm').name('Proton-Flux Storm').onChange(updateStorm);
 stormFolder.add(stormParams, 'stormDay', 0, 18, 0.1).name('Storm Day (since onset)').onChange(updateStorm);
 stormFolder.add(stormParams, 'tauRise', 0.25, 1, 0.05).name('τ rise (days)').onChange(updateStorm);
 stormFolder.add(stormParams, 'tauDecay', 3, 7, 0.5).name('τ decay (days)').onChange(updateStorm);
 stormFolder.add(stormParams, 'showMagnetopause').name('Magnetopause (established)').onChange(updateStorm);
 stormFolder.add(stormParams, 'showEclipse').name('Eclipse (speculative)').onChange(updateStorm);
 stormFolder.add(stormParams, 'eclipseHours', 0.5, 72, 0.5).name('Eclipse totality (h)').onChange(updateStorm);
-stormFolder.add(stormParams, 'solarFromBody').name('Body→Solar gate (fringe)').onChange(updateStorm);
+stormFolder.add(stormParams, 'solarFromBody').name('Body→Solar gate (no known mechanism)').onChange(updateStorm);
 stormFolder.add({ carrington: () => { stormParams.cmeTransitH = 17.6; } }, 'carrington').name('CME transit: Carrington (17.6 h)');
 updateStorm();   // initialize
 
@@ -3128,7 +3182,7 @@ const story = { active: false, playing: false, T: 0, pole: { lat: 0, lon: 0 }, l
 // storm so the driver→consequence order reads correctly. When active (storyCfg.driver), applyStoryClock also
 // drives the E18 body and the E19 storm as PURE functions of T (so the scrubber stays lossless).
 const STORY_DRIVER = {
-  driver: true, title: 'DRIVER SEQUENCE (E20)', chipWord: 'speculative driver chain',
+  driver: true, title: 'DRIVER SEQUENCE', chipWord: 'speculative driver chain',
   shiftWindow: [0.55, 0.72],     // shift comes AFTER the storm
   bulgeWindow: [0.80, 0.96],
   bodyClosest: 0.40,             // body reaches closest approach (s=0) at T=0.40
@@ -3139,7 +3193,7 @@ const STORY_DRIVER = {
   steps: [
     { t: 0.00, cam: { lat: 18, dLon: -50, distance: 3.8 },
       layers: { showEarthquakes: true, showVolcanoes: true, faultStyle: true, solarCoupling: true, giaRebound: false },
-      caption: "A body approaches. The catalyst claim: its pass disturbs the SUN itself — the body→Sun 'spark', which has no known mechanism and is the most fringe link in the chain. Meanwhile its tidal pull registers on the BODY ΔCFS readout against the 0.01 MPa triggering line." },
+      caption: "A body approaches. The catalyst claim: its pass disturbs the SUN itself — the body→Sun 'spark', which has no known mechanism and is the least supported link in the chain. Meanwhile its tidal pull registers on the BODY ΔCFS readout against the 0.01 MPa triggering line." },
     { t: 0.28, cam: { lat: 6, dLon: 0, distance: 3.4 },
       layers: { showEarthquakes: true, showVolcanoes: true, faultStyle: true, solarCoupling: true, giaRebound: false },
       caption: "Closest approach — and the tide falls short. Even at its nearest the body's Coulomb contribution stays well below the line; no fault is triggered. (You CAN force it with an absurd mass/closeness — that is the demonstration.)" },
@@ -3335,7 +3389,7 @@ function capturePNG() {
   a.download = 'poleshift_' + shiftParams.newPoleLat.toFixed(0) + '_' + shiftParams.newPoleLon.toFixed(0) + '.png';
   document.body.appendChild(a); a.click(); a.remove();
 }
-const viewFolder = gui.addFolder('VIEW (Stage 6)');
+const viewFolder = gui.addFolder('View');
 viewFolder.add(viewParams, 'atmosphere', 0, 2, 0.05).name('Atmosphere').onChange(v => { uniforms.uAtmo.value = v; });
 viewFolder.add(viewParams, 'dayNight', 0, 1, 0.05).name('Day / Night').onChange(v => { uniforms.uDayNight.value = v; });
 viewFolder.add(viewParams, 'sunRotate').name('Rotate sunlight (day/night)');
@@ -3396,7 +3450,7 @@ const STANDING_INFO = {   // GUI property name -> { tier, what (one line), src }
   enableStorm:      { tier: 'contested',   what: 'a solar proton-flux pulse (FRED) MULTIPLYING the E13 amplitude — quakes bump in the 2–7 day window', src: 'Marchitelli 2020 (positive) vs Love & Thomas 2013 (null)' },
   showMagnetopause: { tier: 'established', what: 'magnetopause standoff compresses sunward as dynamic pressure rises, R_mp ∝ P_dyn^(−1/6) (the seismic link is NOT established — only the compression)', src: 'Shue 1997' },
   showEclipse:      { tier: 'speculative', what: "the body occulting the Sun (0.53°); multi-day totality needs an enormous/very close body that would blaze in the sky for weeks", src: 'eclipse geometry; detectability tension' },
-  solarFromBody:    { tier: 'speculative', what: 'the body’s tides triggering the solar storm — the most fringe link; only tides PACING the ~11 yr cycle is published, not on-demand flares', src: 'Stefani 2016/2019' },
+  solarFromBody:    { tier: 'speculative', what: 'the body’s tides triggering the solar storm — the least supported link, with no known mechanism; only tides PACING the ~11 yr cycle is published, not on-demand flares', src: 'Stefani 2016/2019' },
 };
 function walkControllers(g, fn) { g.controllers.forEach(fn); (g.folders || []).forEach(f => walkControllers(f, fn)); }
 function applyStandingBadges() {
@@ -3800,17 +3854,17 @@ function ensurePhotorealLoaded() {
   loader.load('earth_night.jpg',           t => { uniforms.uNightTex.value = t; done(); }, undefined, () => {});
   loader.load('earth_specular_clouds.jpg', t => { t.colorSpace = THREE.NoColorSpace; uniforms.uSpecClouds.value = t; done(); }, undefined, () => {});
 }
-const cineFolder = gui.addFolder('VIEW · CINEMATIC (E21)');
+const cineFolder = gui.addFolder('Visual quality');
 cineFolder.add(cineParams, 'quality', ['off', 'medium', 'cinema']).name('Cinematic Quality').onChange(applyQuality);
-cineFolder.add(cineParams, 'showCME').name('Earth-directed CME (E21)').onChange(applyQuality);
+cineFolder.add(cineParams, 'showCME').name('Earth-directed CME').onChange(applyQuality);
 cineFolder.add(cineParams, 'showFieldLines').name('Magnetosphere Field Lines').onChange(applyQuality);
-cineFolder.add(cineParams, 'photoreal').name('Photoreal Earth (E21.5)').onChange(() => { ensurePhotorealLoaded(); updatePhotoreal(); });
+cineFolder.add(cineParams, 'photoreal').name('Photoreal Earth').onChange(() => { ensurePhotorealLoaded(); updatePhotoreal(); });
 cineFolder.add(cineParams, 'floodOverPhoto').name('Keep flood on photoreal').onChange(() => { uniforms.uPhotoFloodKeep.value = cineParams.floodOverPhoto ? 1.0 : 0.0; });
 cineFolder.add(cineParams, 'newFloodTint', 0, 1, 0.05).name('New-flood tint (blend↔distinct)').onChange(v => { uniforms.uNewFloodTint.value = v; });
 cineFolder.addColor(cineParams, 'oceanDeep').name('Deep-water colour').onChange(v => { uniforms.uOceanDeep.value.set(v); });
 // the CME visual rides the FRINGE catalyst chain — badge it speculative and re-apply the A4 chips to the
 // new controls (applyStandingBadges is idempotent: it skips any control that already has a chip).
-STANDING_INFO.showCME = { tier: 'speculative', what: 'an Earth-directed CME bloom riding the E19 proton-flux envelope — pure visualization of the FRINGE body→CME catalyst (adds no engine coupling)', src: 'Battams/NRL 2011 (no body→CME mechanism); CME physics Gopalswamy 2010' };
+STANDING_INFO.showCME = { tier: 'speculative', what: 'an Earth-directed CME bloom riding the E19 proton-flux envelope — pure visualization of the unsupported body→CME catalyst (adds no engine coupling)', src: 'Battams/NRL 2011 (no body→CME mechanism); CME physics Gopalswamy 2010' };
 applyStandingBadges();
 
 
@@ -3838,24 +3892,24 @@ const PLAIN_NAMES = {
   'Stress-Δ Overlay':'Shade where stress changed', 'Density ∝ Stress':'More marks where stress is higher',
   'Gate to Faults':'Only near known faults', 'Site Density':'How many sample sites',
   'Volcano Top %':'Top % of sites that erupt',
-  'Global Dynamic Trigger (E9)':'Quakes can trigger distant quakes',
+  'Global Dynamic Trigger':'Quakes can trigger distant quakes',
   'Antipodal Bonus (contested)':'Extra quakes at Earth’s far side (contested)',
   'Antipodal Cap (°)':'Far-side hotspot size (°)', 'Deep Pref (speculative)':'Bias quakes deeper (unsupported)',
-  'LOD Modulation (E10)':'Day-length change nudges equator faults (contested)',
+  'LOD Modulation':'Day-length change nudges equator faults (contested)',
   'Rotational Slowing':'How much Earth’s spin slows',
-  'Deglaciation Mult. (E11)':'Melting ice boosts volcanoes', 'Max Eruption ×':'Most a volcano can speed up (×)',
+  'Deglaciation Mult.':'Melting ice boosts volcanoes', 'Max Eruption ×':'Most a volcano can speed up (×)',
   'Plume Threshold (×)':'Flag volcanoes above this boost (×)',
-  'GIA Rebound (E12)':'Land rebounds as the load lifts', 'Rebound ΔCFS (MPa)':'Rebound trigger threshold (MPa)',
-  'Solar Coupling (E13)':'Solar storms nudge ready faults (contested)', 'Proton Flux':'Solar-storm strength',
-  'EQ→Volcano Cascade (E14)':'Big quakes can wake nearby volcanoes', 'Cascade Mag Floor':'Smallest quake that can do this',
-  'Fault Style (E15)':'Colour quakes by fault type', 'Flank-Collapse Tsunami (E16)':'Coastal-volcano collapse tsunamis',
-  'Max Tsunami Reach (km)':'Tsunami reach ring (km)', 'Climate Zones (E17)':'Show shifted climate belts',
+  'GIA Rebound':'Land rebounds as the load lifts', 'Rebound ΔCFS (MPa)':'Rebound trigger threshold (MPa)',
+  'Solar Coupling':'Solar storms nudge ready faults (contested)', 'Proton Flux':'Solar-storm strength',
+  'EQ→Volcano Cascade':'Big quakes can wake nearby volcanoes', 'Cascade Mag Floor':'Smallest quake that can do this',
+  'Fault Style':'Colour quakes by fault type', 'Flank-Collapse Tsunami':'Coastal-volcano collapse tsunamis',
+  'Max Tsunami Reach (km)':'Tsunami reach ring (km)', 'Climate Zones':'Show shifted climate belts',
   'Show Belt Crossings':'Highlight crust that crossed a belt', 'Model Caveats':'Honest limitations',
-  'Perturbing Body (E18)':'Add a passing body', 'Mass (Moons)':'Body mass (in Moons)',
-  'Perihelion (lunar dist)':'Closest distance (Moon distances)', 'Proton-Flux Storm (E19)':'Solar storm',
+  'Perturbing Body':'Add a passing body', 'Mass (Moons)':'Body mass (in Moons)',
+  'Perihelion (lunar dist)':'Closest distance (Moon distances)', 'Proton-Flux Storm':'Solar storm',
   'Magnetopause (established)':'Show the magnetosphere boundary', 'Eclipse (speculative)':'Show the eclipse shadow',
-  'Body→Solar gate (fringe)':'Body sparks the storm (fringe)',
-  'Cinematic Quality':'Visual quality (Sun & glow)', 'Earth-directed CME (E21)':'Show the solar blast (CME)',
+  'Body→Solar gate (no known mechanism)':'Body sparks the storm (no known mechanism)',
+  'Cinematic Quality':'Visual quality (Sun & glow)', 'Earth-directed CME':'Show the solar blast (CME)',
   'Magnetosphere Field Lines':'Show Earth’s magnetic field lines',
   'Atmosphere':'Atmosphere glow', 'Day / Night':'Day/night shading', 'Graticule (geographic)':'Lat/long grid',
   'Auto-rotate view':'Auto-rotate', 'Save PNG snapshot':'Save image',
@@ -3864,13 +3918,13 @@ let _plainOn = false;
 const LEGEND_PLAIN = {   // bottom-legend rows → lay phrasing (already-plain rows omitted; multi-swatch rows skipped at runtime)
   'earthquake (|Δσ|)':'earthquake', 'volcano (unloading)':'volcano',
   'Δσ load':'stress added (water gained)', 'Δσ unload':'stress removed (water lost)',
-  'dynamic / antipodal trigger (E9)':'quake triggered by another quake',
-  'LOD synch (E10)':'fault stressed by the spin change',
-  'deglaciation ×rate (E11)':'volcano sped up by melting ice',
-  'GIA rebound (E12)':'quake from the land rebounding',
-  'solar coupling (E13)':'fault nudged by a solar storm',
-  'EQ→volcano (E14)':'volcano set off by a quake',
-  'flank-collapse tsunami (E16)':'volcano-collapse tsunami',
+  'dynamic / antipodal trigger':'quake triggered by another quake',
+  'LOD synch':'fault stressed by the spin change',
+  'deglaciation ×rate':'volcano sped up by melting ice',
+  'GIA rebound':'quake from the land rebounding',
+  'solar coupling':'fault nudged by a solar storm',
+  'EQ→volcano':'volcano set off by a quake',
+  'flank-collapse tsunami':'volcano-collapse tsunami',
 };
 const _origNames = new Map();   // controller -> original display name (so the swap is reversible)
 function setPlainLanguage(on) {
@@ -3896,7 +3950,9 @@ function setPlainLanguage(on) {
   });
   const b = document.getElementById('plain-toggle'); if (b) b.classList.toggle('on', on);
 }
-const _advFolders  = [waterFolder, fxFolder, climateFolder, bodyFolder, stormFolder, viewFolder];
+// fxFolder ("Consequences") is deliberately NOT hidden in Simple — it stays visible so the one-tap
+// effect sets + Detail + Model Caveats remain reachable; only its expert toggles/sliders hide.
+const _advFolders  = [waterFolder, climateFolder, bodyFolder, stormFolder, viewFolder];
 const _simpleOpen  = [scenarioFolder, storyFolder, poleFolder, cineFolder];
 function updateSimpleReadout() {   // friendly one-liner shown only in Simple mode (reads the existing readout spans)
   const el = document.getElementById('simple-readout'); if (!el) return;
@@ -3908,8 +3964,28 @@ function updateSimpleReadout() {   // friendly one-liner shown only in Simple mo
 }
 function setUIMode(simple) {
   document.body.classList.toggle('simple-mode', simple);
+  // SIMPLE = 4 panels, not 13 (2026-07-30). Previously these were only COLLAPSED, so a newcomer still
+  // faced a wall of headers. Now they're tagged and hidden outright by CSS in Simple; Advanced is
+  // unchanged and still exposes every control. Nothing is removed — only hidden, one tap away.
+  _advFolders.forEach(f => { if (f && f.domElement) f.domElement.classList.add('adv-only'); });
   _advFolders.forEach(f => f && (simple ? f.close() : f.open()));   // collapse dense panels in Simple; reopen in Advanced
   if (simple) _simpleOpen.forEach(f => f && f.open());              // keep presets / pole / story / cinematic up front
+  // In Simple, "Consequences" stays visible but shows only the one-tap sets, Detail and Model Caveats;
+  // its expert toggles/sliders and the three standing subfolders hide (the sets still run the FULL
+  // established chain — simpler usage, identical result). Advanced shows all of them again.
+  // root-level expert toggles (bulge/spin-axis wireframes) also hide in Simple; terrain exaggeration and
+  // auto-rotate are harmless/fun so they stay.
+  gui.controllers.forEach(c => {
+    if (c && c.domElement) c.domElement.classList.toggle('adv-only', /Show Bulge|Show Spin Axis/.test(c._name || ''));
+  });
+  const SIMPLE_FX_KEEP = /Show the established set|Show everything|Clear all|Detail \(marker density\)|Model Caveats|Honest limitations/;
+  fxFolder.controllers.forEach(c => {
+    if (c && c.domElement) c.domElement.classList.toggle('adv-only', !SIMPLE_FX_KEEP.test(c._name || ''));
+  });
+  [fxEstablished, fxContested, fxSpeculative].forEach(f => {
+    if (f && f.domElement) f.domElement.classList.add('adv-only');
+    if (f && simple) f.close();
+  });
   setLegendOpen(!simple);                                           // legend collapsed by default in Simple (still toggleable)
   if (simple) setPlainLanguage(true);                               // Simple is fully friendly; Advanced leaves plain-lang as-is
   updateSimpleReadout();
@@ -3919,6 +3995,7 @@ function setUIMode(simple) {
 }
 document.getElementById('mode-simple').addEventListener('click', () => setUIMode(true));
 document.getElementById('mode-advanced').addEventListener('click', () => setUIMode(false));
+document.getElementById('show-all-controls').addEventListener('click', () => setUIMode(false));
 document.getElementById('legend-head').addEventListener('click', () => setLegendOpen(!_legendOpen));
 document.getElementById('plain-toggle').addEventListener('click', () => setPlainLanguage(!_plainOn));
 document.getElementById('explain-btn').addEventListener('click', () => { document.getElementById('explainer').style.display = 'block'; });
