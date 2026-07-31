@@ -340,12 +340,6 @@ history behind that, not a substitute for it.
    prose paragraphs are .adv-note and Simple gets a single line pointing at Honest limitations. Anything
    added to that panel later should keep the numbers unconditional.
 
-   Also confirmed while answering a question about the repo's GitHub badge: the "HTML" label and its red dot
-   are not a judgement of the stack. GitHub Linguist attributes a file wholly to its detected language, and
-   geo.html carries all ~4,700 lines of JS inside a <script type="module"> block, so the repo reads as
-   HTML 344,613 bytes vs JavaScript 4,101 (sw.js alone). #e34c26 is simply Linguist's fixed colour for HTML.
-   A .gitattributes `linguist-language` override would relabel it, purely cosmetically; not done.
-
    MONUMENT NEEDLES WERE INVISIBLE (reported as "monuments do not seem to be showing up"). The cause was not
    logic — every number, toggle, label and colour was already correct and verified — but SIZE. Marker
    dimensions are WORLD units on a globe of radius 1, which renders ~260 px across at the opening frame, so

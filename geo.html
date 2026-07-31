@@ -57,83 +57,53 @@
    startup now); ECDO preset regression clean. NOTE: could not get a trustworthy FPS delta from the
    automation environment — the test tab reported document.hidden=true, so Chrome throttled the render
    loop; a real FPS check must be done on a focused desktop tab (user action).
- - 2026-07-31: OFF-CENTRE OPENING FRAME + E22 REACHABLE IN SIMPLE (user review). (1) FRAMING: the globe was
-   centred in the WHOLE viewport, but the viewport is not all free space — on desktop the settings drawer is a
-   permanent 320px dock, so a globe at W/2 sat visibly right of the centre of what you can actually see, and
-   its top crowded the title / scientific-standing band. Fixed with an OFF-AXIS PROJECTION
-   (camera.setViewOffset), NOT by moving the camera or the orbit target: the pivot stays at the globe's centre
-   so orbiting still feels right, raycasting (drag-to-set-pole) and .project() labels both follow the
-   projection matrix automatically, and nothing about the scene or the pole math changes. Shift left = half the
-   dock width, keyed to the 900px DOCK breakpoint and NOT to drawer-open (below it the drawer is a transient
-   overlay and the globe must not jump when the gear is tapped). Shift down = 5.5% of height, but CLAMPED by a
-   real circle-vs-rectangle clearance test against the readout block — the leftward shift moves the globe
-   TOWARD the bottom-left readout, so on a short landscape window the nudge shrinks itself instead of clipping
-   the text (measured clearances on 1662×718: standing key 35→95px, readout 10px by construction, title 176px,
-   drawer 411px; centre 831,359 → 671,398 = exactly the centre of the free width). Recomputed on resize —
-   unlike the opening DISTANCE, which stays startup-only so a deliberate pinch-zoom is never overridden; an
-   offset is framing, not zoom. The opening margin factor also eased 0.80→0.74 (globe ~8% smaller): without
-   that slack the clamp eats the downward nudge on common laptop sizes (1536×864 gives 18px instead of 45px;
-   1280×720 gives 2px instead of 24px). On 1080p the shrink buys nothing — revert to 0.80 if size is preferred
-   over movement. Both knobs are named: FRAME_DOWN_FRAC and the 0.74 in openingDistance().
-   NOT VISUALLY CONFIRMED HERE — screenshot capture failed repeatedly this session (script-injection and
-   renderer timeouts, with auto-rotate already off); the geometry above was verified numerically from the live
-   DOM rects instead. Worth an eyeball on a real focused tab.
-   (2) E22 REACHABILITY: the monument toggle moved from the "Debated" subfolder to the Consequences folder
-   ROOT and joined SIMPLE_FX_KEEP. Simple mode hides the three standing subfolders wholesale, which left
-   "Show everything" as the only route to it — burying a quiet two-number comparison under every other
-   contested/speculative layer at once. The move does NOT soften the grading: the ~ DEBATED chip rides on the
-   control itself (exactly like showEarthquakes, also a graded root-level control). The PANEL is now
-   mode-split: the residual numbers and the ⚠ same-meridian flag show in BOTH modes — they are the honest
-   signal and must never become a mode-gated extra — while the two prose paragraphs are .adv-note
-   (Advanced-only) and Simple gets a one-line version pointing at Model Caveats, where the full argument
-   lives either way. If you add anything to that panel, keep the numbers unconditional.
-   (3) MONUMENT NEEDLES WERE INVISIBLE — user: "monuments do not seem to be showing up". Root cause was NOT
-   logic (every number, toggle and label was already correct) but SIZE: the needle cross-section was 0.0035
-   WORLD units, and the globe is radius 1 rendered ~260 px at the opening frame, so the needles drew 0.9 px
-   wide — literally sub-pixel, and invisible over bright terrain. Cross-section 0.0035→0.013 (~3.4 px) and
-   lengths 0.11/0.17→0.17/0.25. LESSON FOR ANY FUTURE MARKER: these are world units on a unit sphere, so
-   multiply by ~260 to get pixels before assuming a marker reads; sub-pixel geometry renders as nothing.
-   (4) PROXIMITY-SCALED CONTROL SENSITIVITY — user: "tone down some touchiness" zoomed all the way in.
-   OrbitControls uses ONE rotate/zoom speed at every distance, but the same angular step sweeps far more
-   visible surface up close, so a gesture tuned at the opening frame feels twitchy against the globe. Speeds
-   now lerp with altitude above the surface: rotate 0.18→0.6 and zoom 0.34→1.0, reaching full by distance
-   2.25 — well inside the ~3.7 opening frame, so normal use is UNCHANGED and this only bites in the close-up
-   range. Same principle as the drag-to-set-pole retune: near the surface, small input must mean small change.
- - 2026-07-31: E22 MONUMENT ALIGNMENT LAYER — SHIPPED (was the one feature left mid-flight). Compares each
-   cited site's MEASURED axis azimuth against the bearing to today's pole AND to the pole you've set, side by
-   side. Standard great-circle forward azimuth; monument axes are LINES not rays, so the residual folds to
-   0–90°. VERIFIED against three oracles (cross-checked in Python and in-browser, identical to the digit):
-   bearing to today's pole = 0.000° from every site; Giza vs today = 0.067° (reproduces Dash 2017 exactly —
-   this is the regression oracle, re-run it after any change here); Giza vs the ECDO pole (−14, 31) = 0.255°
-   with the same-meridian flag firing at Δlon 0.13°. THE LAYER'S REASON TO EXIST IS THAT IT ARGUES AGAINST THE
-   PREMISE: Giza already matches TODAY'S pole to four arcminutes, so a large shift after ~2500 BC would have
-   left DEGREES of residual — the monument data constrains a recent shift to near-zero, and both numbers are
-   shown so the reader draws the conclusion. SECOND HONESTY POINT, do not remove: Giza's 0.255° "match" to the
-   ECDO pole is a SAME-MERIDIAN COINCIDENCE (Giza 31.13°E, that pole 31°E) — a N–S axis points at anything on
-   its own meridian whatever its latitude — flagged in the panel whenever |Δlon| < 2°; this is a check
-   ECDOview does not appear to make and is the most valuable thing the layer demonstrates. THIRD: only
-   CARDINAL-aimed sites can test a pole at all, so Göbekli Tepe (stellar) and Teotihuacán (deliberate 15.5°
-   offset) are drawn in grey, labelled "not a pole indicator", and never scored — and the white bearing line
-   is drawn ONLY for cardinal sites, because drawing it at a stellar site would imply it is being scored.
-   THREE CITED SITES ONLY — do NOT invent azimuths to pad the list (a residual is only as good as its
-   published azimuth; a short sourced list beats ECDOview's 69). Implementation follows the E9–E16 pattern:
-   one InstancedMesh via finalizeMarkerMesh(mesh, 11), MAX_MONU=32, count cleared when off, per-instance
-   colour. The pole tested against is read back as R^-1·NORTH (NOT shiftParams) so it tracks the scrubber,
-   shared links and the story clock. renderMonumentAlignments() is a STANDALONE function called at the end of
-   computeEffects — it needs nothing from the Fibonacci site loop, and the header says not to grow that
-   function. Wired into: fxContested folder (default OFF), STANDING_INFO (contested — measurements are fact,
-   the inference is not), PLAIN_NAMES, the "Show everything" bundle, share links (+monumentAlign), a Model
-   Caveats <li>, three legend rows, and screen-projected site labels (same mechanism as #body-label).
-   The #monu-panel is deliberately a SIBLING of .readout-adv, not a child, so it survives Simple mode.
-   TWO ADJACENT FIXES made in the same pass: (a) the LEGEND_PLAIN lookup was keyed WITHOUT the "(E9)…(E16)"
-   codes that the legend markup actually carries, so every coded legend row silently failed to swap to plain
-   language — the matcher now tolerates a trailing code; (b) #hint-chip had a hard-coded bottom:64px tuned to
-   the short Simple-mode readout, so a taller readout (this panel, or Advanced mode) slid under it — it now
-   parks just above the readout's measured top edge (positionHintChip()). VERIFIED IN-BROWSER: all three
-   oracles, share-link round-trip both directions, bundles (established off / everything on / clear off),
-   clean off-state (count 0, panel empty, labels hidden), needles visibly rendering N–S at Giza and Göbekli
-   Tepe with labels landing on the correct geography, no overlap, ZERO console errors.
-   Backup: archive/geo.html.pre-e22-2026-07-31.bak.
+ - 2026-07-31b: FRAMING + FEEL + E22 REACHABILITY (user review). Full detail in research/CHANGELOG.md.
+   (1) OFF-CENTRE OPENING FRAME. The globe was centred in the whole viewport, but the settings drawer is a
+   permanent 320px dock on desktop, so it sat right of the centre of the VISIBLE area. Uses an off-axis
+   projection (camera.setViewOffset) — NOT a moved camera or orbit target, so the pivot stays at the globe's
+   centre and raycasting + .project() labels follow the projection matrix for free. Horizontal shift = half
+   the dock width, keyed to the 900px DOCK breakpoint and NOT to drawer-open (below it the drawer is a
+   transient overlay; the globe must not jump when the gear is tapped). Vertical nudge is clamped by a
+   circle-vs-rect clearance test against the readout, because shifting left moves the globe TOWARD it.
+   Recomputed on resize — unlike the opening DISTANCE, which stays startup-only so a pinch-zoom is never
+   overridden. Margin factor eased 0.80->0.74 to leave room for the nudge on laptop-sized windows.
+   NOT VISUALLY CONFIRMED — screenshots failed all session; geometry verified numerically from DOM rects.
+   (2) MONUMENT NEEDLES WERE INVISIBLE. Not a logic fault — SIZE. Marker dims are WORLD units on a radius-1
+   globe that renders ~260px across, so the 0.0035 cross-section drew 0.9px. LESSON FOR ANY NEW MARKER:
+   multiply world units by ~260 to get pixels first; sub-pixel geometry renders as NOTHING, not as faint.
+   (3) PROXIMITY-SCALED SENSITIVITY. Rotate 0.18->0.6 and zoom 0.34->1.0 lerped by altitude above the
+   surface, full speed by distance 2.25 (inside the ~3.7 opening frame, so normal use is unchanged).
+   (4) E22 REACHABILITY. Toggle moved from the "Debated" subfolder to the Consequences ROOT + SIMPLE_FX_KEEP;
+   Simple hides those subfolders wholesale, leaving "Show everything" as the only route to it. Grading is
+   unchanged (the ~ DEBATED chip rides on the control, as with showEarthquakes). Panel is mode-split: the
+   residual NUMBERS and the same-meridian flag show in BOTH modes — they are the honest signal, never make
+   them mode-gated — while prose is .adv-note and Simple gets a one-line pointer to Model Caveats.
+ - 2026-07-31: E22 MONUMENT ALIGNMENT LAYER — SHIPPED. Compares each cited site's MEASURED axis azimuth
+   against the great-circle bearing to today's pole AND to the pole you've set, side by side. Axes are LINES
+   not rays, so the residual folds to 0-90 deg. Full narrative in research/CHANGELOG.md; oracles and editing
+   notes in research/HANDOFF.md §3.
+   REGRESSION ORACLES (cross-checked in Python and in-browser, exact): bearing to today's pole = 0.000 deg
+   from every site; Giza vs today = 0.067 (reproduces Dash 2017 — re-run this after ANY change here); Giza
+   vs the ECDO pole (-14, 31) = 0.255, with the same-meridian flag firing at dlon 0.13.
+   THREE THINGS THAT MUST NOT BE SOFTENED — they are the reason the layer exists:
+     (a) Giza already matches TODAY'S pole to four arcminutes, so a large shift after ~2500 BC would have
+         left DEGREES of residual. This data CONSTRAINS a recent shift to near-zero — the one layer whose
+         evidence cuts against the premise. Both numbers are shown so the reader draws the conclusion.
+     (b) Giza's 0.255 "match" to the ECDO pole is a SAME-MERIDIAN COINCIDENCE (Giza 31.13E, pole 31E): a N-S
+         axis points at anything on its own meridian whatever its latitude. Flagged when |dlon| < 2 deg.
+     (c) Only CARDINAL-aimed sites can test a pole. Gobekli Tepe (stellar) and Teotihuacan (deliberate 15.5
+         deg offset) are grey, labelled "not a pole indicator", never scored — and the bearing line is drawn
+         ONLY for cardinal sites, since drawing it elsewhere would imply that axis is being scored.
+   DO NOT INVENT AZIMUTHS to pad the site list; a residual is only as good as its published azimuth.
+   TWO LANDMINES: the pole tested against is read back as R^-1*NORTH, NOT from shiftParams, so it tracks the
+   scrubber / share links / story clock; and initialBearing() takes TRUE east-longitude — latLonToDir()
+   negates lon for the texture-UV flip, and that RENDERING convention must never reach the bearing math.
+   Built like E9-E16: finalizeMarkerMesh(mesh, 11), MAX_MONU=32, count cleared when off, per-instance colour.
+   renderMonumentAlignments() is standalone, called at the END of computeEffects (which must not be grown).
+   #monu-panel is a SIBLING of .readout-adv, not a child, so it survives Simple mode.
+   Also fixed here: LEGEND_PLAIN was keyed without the "(E9)..(E16)" codes the legend markup carries, so
+   every coded row silently failed to swap to plain language; and #hint-chip's hard-coded bottom:64px slid
+   under any taller readout (now positionHintChip()).
  - 2026-07-31: RESPONSIVE OPENING FRAME. The camera FOV is VERTICAL, so at a fixed distance a tall narrow
    phone crops the globe far tighter than a wide desktop — the fixed 3.44 that frames well on desktop read
    as "too zoomed" in portrait (user screenshot). The opening distance is now derived from the aspect ratio
