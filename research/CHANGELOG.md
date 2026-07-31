@@ -303,6 +303,71 @@ history behind that, not a substitute for it.
 
 ## Part 2 — Session changelog (chronological, most recent first)
 
+ LAST UPDATED: 2026-07-31c (THEORY/ATTRIBUTION AUDIT + ANALYTICS HOOK. Research and sources in
+   research/RESEARCH_7_theory_audit.md; this is what shipped from it.
+
+   ECDO ATTRIBUTION. Now cited as "The Ethical Skeptic (Roger B. Cunningham)". This is NOT a
+   de-anonymisation: he publishes under his own name — the April 2026 book "Inversion — ECDO Theory",
+   author-signed copies sold on his own site, and a podcast appearance as "Roger Cunningham aka The Ethical
+   Skeptic". The pseudonym stays FIRST in the citation because that is how the body of work is published
+   and searchable. Our coordinates needed no change: ECDOview states NP' as 14S/31E, exactly the preset we
+   already shipped. The book is now the canonical source and post-dates all our prior research.
+
+   NEW SCENARIO — DAVIDSON, BAY OF BENGAL. lat 15 / lon 90, a 75 degree shift. Ben Davidson /
+   Suspicious0bservers is the third pole in the widely-cited "three different pole locations" framing
+   (alongside ECDO and Zacharias), and the app shipped only Hapgood/ECDO/Zacharias — so the scenario set
+   misrepresented the landscape by omission. He differs on every axis: 75 degrees rather than ECDO's 104 or
+   Zacharias's 90.8, a different hemisphere, and a solar rather than internal cause. Added as coordinates
+   plus a graded caption only; no mechanism, no coupling, cause-agnosticism intact. The caption states
+   plainly why the stated mechanism fails — a micronova is a thermonuclear runaway on a white dwarf in a
+   binary system, and the Sun is a main-sequence star with no solid surface and no companion — then names
+   the legitimate adjacent science (Kepler superflares, Miyake events in 14C/10Be such as 774/775 CE) and
+   credits the Chan Thomas "The Adam and Eve Story" lineage the pole traces back to.
+
+   ZACHARIAS RELABELLED "Zacharias · GEOSYNC". "Zacharias" is a handle, not a name (real identity
+   undisclosed per RESEARCH_2), so labelling a scenario with it implied a citable person. Naming the
+   framework is both more accurate and more searchable.
+
+   THE FACTUAL FIX THAT JUSTIFIED THE WHOLE AUDIT. The Zacharias caption asserted the Chandler-wobble
+   collapse was "still holding as of 2026". It is not. The collapse is real — amplitude fell from ~150 mas
+   to under ~10 mas between roughly 2015 and 2020 — but the wobble RE-EXCITED around 2020-2021 with an
+   approximately 180 degree phase reversal (Shi, Zhou, Chen & Xu 2025, Journal of Geodesy 99:97,
+   doi 10.1007/s00190-025-02021-w). Both the fading and the return are attributed to ordinary surface mass
+   redistribution: 2011-2012 continental air and water changes (Jeon et al. 2025, GRL,
+   doi 10.1029/2025GL116191) and hydrological/cryospheric mass shifts measured by GRACE/GRACE-FO. The
+   caption now carries both citations and states that a wobble which collapses and then returns is weak
+   evidence for an imminent shift. Note the earlier caption was not sloppy — it already cited Jeon and
+   already named GEOSYNC; it was written while the collapse was ongoing and simply expired. LESSON: avoid
+   user-visible claims phrased "still holding as of <year>", which go stale silently.
+
+   TWO BUGS FOUND WHILE VERIFYING. (a) applyPreset refreshed only fxFolder.controllers, which does not
+   recurse into folders, so any preset touching a control inside Established/Debated/Unverified — faultStyle
+   on Hapgood and ECDO, solarCoupling on the new Davidson preset — left a stale checkbox in the UI while
+   the underlying state was correct. Now uses walkControllers, the same recursive helper the effect bundles
+   and share-link restore already use. (b) setCaptionBox used textContent, so the emphasis tags in the new
+   captions rendered as literal markup; switched to innerHTML, which is safe here because every string
+   passed to it is a hard-coded constant in this file (SCENARIOS captions and storyCfg step captions),
+   never user input and never a URL parameter — a comment records that constraint.
+
+   ANALYTICS HOOK — optional and INERT until configured. ANALYTICS.code in geo.html is empty by default, so
+   no script is loaded and no request is made to anyone; setting it to a GoatCounter site code enables it.
+   GoatCounter was chosen over Cloudflare Web Analytics because the actual question is how many people
+   INSTALL the app, which requires custom events; Cloudflare's product is pageviews-only and cannot answer
+   it. It is cookieless, open-source and free at this scale. Records page views plus two events:
+   'pwa-installed' from the appinstalled event, and 'pwa-launch-standalone' fired once per session when
+   display-mode is standalone. Honours Do Not Track and only runs over https.
+   THE iOS TRAP, documented so the numbers are not misread: iOS fires neither beforeinstallprompt nor
+   appinstalled, so iPhone and iPad installs will report ZERO 'pwa-installed' events no matter how many
+   people add the app to their Home Screen. The only iOS signal is 'pwa-launch-standalone', which counts
+   launches of an already-installed app rather than the install itself. They answer different questions and
+   must never be summed.
+   SERVICE WORKER: sw.js now bypasses ANALYTICS_HOSTS entirely and must keep doing so. The SW is cache-first
+   for everything non-HTML, so without the bypass it would cache the /count ping itself and answer every
+   subsequent hit from cache — analytics would silently stop reporting while appearing healthy. Dropping a
+   count while offline is correct; serving a cached one is a lie. CACHE_VERSION bumped v1 -> v2.
+
+   Prior: 2026-07-31b framing/feel/reachability — see below.)
+
  LAST UPDATED: 2026-07-31b (OFF-CENTRE OPENING FRAME + E22 REACHABLE IN SIMPLE MODE — both from user review
    immediately after E22 shipped.
 

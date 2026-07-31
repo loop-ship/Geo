@@ -15,7 +15,10 @@
  * TO FORCE AN UPDATE for everyone: bump CACHE_VERSION. The activate handler deletes every cache
  * that isn't the current version, and skipWaiting()/clients.claim() make it take effect promptly.
  */
-const CACHE_VERSION = 'v1';
+const CACHE_VERSION = 'v2';   // bumped: analytics bypass + new scenario preset
+// Hosts that must never be cached or served from cache (see the fetch handler). Keep in sync with the
+// ANALYTICS block in geo.html — if you switch provider, add its script host AND its endpoint host.
+const ANALYTICS_HOSTS = ['gc.zgo.at', 'goatcounter.com', 'static.cloudflareinsights.com', 'cloudflareinsights.com'];
 const CACHE_NAME = 'poleshift-' + CACHE_VERSION;
 
 // App shell: small, needed to boot. Relative URLs => works on localhost AND the /Geo/ subpath.
@@ -60,6 +63,13 @@ self.addEventListener('fetch', (event) => {
   if (req.method !== 'GET') return;                    // never cache non-GET
   const url = new URL(req.url);
   if (url.protocol !== 'http:' && url.protocol !== 'https:') return;   // skip chrome-extension: etc.
+
+  // ANALYTICS MUST BYPASS THE SERVICE WORKER ENTIRELY. The rule below is cache-first for everything
+  // non-HTML, which would (a) freeze the beacon script at its first version and, far worse, (b) serve
+  // the /count PING itself from cache — so every hit after the first would be answered locally and
+  // never reach the server, silently killing analytics while looking fine. Let these hit the network,
+  // and let them fail offline: a dropped count is correct behaviour, a cached one is a lie.
+  if (ANALYTICS_HOSTS.some((h) => url.hostname === h || url.hostname.endsWith('.' + h))) return;
 
   if (isHTML(req, url)) {
     // NETWORK-FIRST: always prefer the freshly deployed HTML; fall back to cache when offline.

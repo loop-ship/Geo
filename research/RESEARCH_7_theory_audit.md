@@ -92,23 +92,29 @@ reads as a person we can cite, which we can't.
 **Recommend relabelling to "Zacharias · GEOSYNC"** — keeps the recognisable handle, adds the actual
 framework name (geosyncmonitor.com, "GEOSYNC // Earth Orientation Monitor"), and is more searchable.
 
-**The substantive finding — our caption is currently one-sided.** The premise is that the Chandler
-wobble is *collapsing*, signalling TPW onset. The collapse itself is real and mainstream-acknowledged
-(2015–2020, amplitude falling from ~150 mas to under ~10 mas). But:
-- it **re-excited around 2020–2021**, reportedly with an ~180° phase reversal, and
-- the mainstream attribution is **hydrological and cryospheric mass anomalies** whose excitation
-  destructively interfered with the ongoing oscillation — i.e. a *forcing* change, not an internal
-  precursor to a pole shift.
+**CORRECTION to this section's first draft.** It claimed our caption was "one-sided". That was wrong —
+written before reading the shipped string. The caption already named GEOSYNC and already carried
+counter-evidence citing **Jeon et al. 2025 (GRL)**. The 2026-07-28 premise audit had done its job.
 
-A wobble that collapses and then comes back is much weaker evidence for imminent TPW than a wobble
-that collapses and stays collapsed. Our Zacharias caption should carry that.
+**The actual defect was narrower and worse: a factual error.** The caption asserted the wobble collapse
+was *"still holding as of 2026"*. It is not. Resolved by the targeted source pull this section
+originally owed:
 
-> ⚠ **RESEARCH DEBT — do not ship this claim until sourced.** The re-excitation and phase-reversal
-> figures above came from a search summary, and the two papers I pulled (Jaroszewicz et al., *MFDFA
-> study of the Chandler wobble's anomalous disappearance 2015–2020*; the EGU geodesy blog) did **not**
-> confirm the specific numbers. Leads to nail down: that MFDFA paper's full text, A&A 2011 "The Earth's
-> variable Chandler wobble", and current IERS polar-motion series. **One targeted source pull is owed
-> before any of this reaches a user-visible string.**
+- The collapse is real: amplitude fell from ~150 mas to **under ~10 mas between ~2015 and 2020**.
+- But it **re-excited around 2020–2021**, with an ~180° phase reversal — **Shi, Zhou, Chen & Xu (2025),
+  "Recent disappearing and re-excited Earth's Chandler wobble: contributions from GRACE/GFO
+  hydrological and cryospheric mass changes", *Journal of Geodesy* 99:97**, doi 10.1007/s00190-025-02021-w.
+- Both the fading and the return trace to **ordinary surface mass redistribution** — 2011–2012
+  continental air/water changes (Jeon et al. 2025, GRL, doi 10.1029/2025GL116191) and hydrological /
+  cryospheric mass shifts measured by GRACE/GRACE-FO — not an internal precursor to a pole shift.
+
+A wobble that collapses **and then comes back** is materially weaker evidence for imminent TPW than one
+that collapses and stays collapsed. The caption now says so, with both citations. **Research debt
+closed.**
+
+*Process note worth keeping:* the error was introduced by a caption written when the collapse was
+ongoing and never revisited as the science moved. Time-sensitive phrasing like "still holding as of
+\<year\>" is a standing liability — prefer claims that don't silently expire.
 
 ### 2.4 Hapgood
 

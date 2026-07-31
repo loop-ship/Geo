@@ -57,6 +57,42 @@
    startup now); ECDO preset regression clean. NOTE: could not get a trustworthy FPS delta from the
    automation environment — the test tab reported document.hidden=true, so Chrome throttled the render
    loop; a real FPS check must be done on a focused desktop tab (user action).
+ - 2026-07-31c: THEORY/ATTRIBUTION AUDIT SHIPPED (research/RESEARCH_7_theory_audit.md has findings+sources).
+   (1) ECDO attribution: now "The Ethical Skeptic (Roger B. Cunningham)" — self-disclosed, NOT a
+   de-anonymisation (he publishes the 2026 book "Inversion — ECDO Theory" under his own name). Pseudonym
+   stays FIRST because that is how the work is published and searchable. Our 14S/31E coords were already
+   right — they match his own ECDOview tool.
+   (2) NEW SCENARIO: DAVIDSON — BAY OF BENGAL, lat 15 / lon 90 = a 75 deg shift. Ben Davidson /
+   Suspicious0bservers is the THIRD pole in the widely-cited "three different pole locations" framing and we
+   shipped only Hapgood/ECDO/Zacharias, so the set misrepresented the landscape BY OMISSION. Distinct on
+   every axis: 75 deg (not 104, not 90.8), other hemisphere, solar rather than internal cause. Preset is
+   coordinates + a graded caption ONLY — no mechanism added, engine stays cause-agnostic. Caption states
+   plainly why the micronova mechanism fails (a micronova is a thermonuclear runaway on a WHITE DWARF IN A
+   BINARY; the Sun is main-sequence with no companion) and names the real adjacent science (Kepler
+   superflares, Miyake events) plus the Chan Thomas lineage.
+   (3) ZACHARIAS relabelled "Zacharias · GEOSYNC" — it is a HANDLE, not a name; the framework name is the
+   honest, searchable label.
+   (4) FACTUAL FIX, the reason this audit was worth doing: the Zacharias caption claimed the Chandler-wobble
+   collapse was "still holding as of 2026". IT IS NOT — the wobble RE-EXCITED around 2020-2021 with a ~180
+   deg phase reversal (Shi et al. 2025, J. Geodesy 99:97). Caption now carries both that and Jeon et al.
+   2025 (GRL), and says a wobble that collapses then returns is weak evidence for an imminent shift.
+   LESSON: "still holding as of <year>" phrasing silently expires — avoid claims with a shelf life.
+   (5) TWO BUGS FOUND WHILE VERIFYING: applyPreset refreshed only fxFolder.controllers, which does NOT
+   recurse, so any preset touching a subfolder control (faultStyle, solarCoupling) left a STALE checkbox —
+   now walkControllers. And setCaptionBox used textContent, so <b>/<i> in captions rendered as literal
+   tags; now innerHTML, which is safe because every caption is a hard-coded constant in this file (if that
+   ever stops being true, revert it).
+ - 2026-07-31c: ANALYTICS HOOK (optional, INERT until configured). ANALYTICS.code in geo.html is '' by
+   default => no script loads and nothing is sent anywhere. Set it to a goatcounter site code to enable.
+   GoatCounter rather than Cloudflare because the question is "how many people INSTALL it", which needs
+   CUSTOM EVENTS; Cloudflare Web Analytics is pageviews-only and cannot answer it. Records page views plus
+   'pwa-installed' (appinstalled event) and 'pwa-launch-standalone' (once per session, display-mode check).
+   Honours Do Not Track and only runs on https. THE iOS TRAP, do not misread the numbers: iOS fires NEITHER
+   beforeinstallprompt NOR appinstalled, so iPhone installs report ZERO 'pwa-installed' forever; the only
+   iOS signal is 'pwa-launch-standalone', which counts LAUNCHES of an already-installed app. Different
+   questions — never add them together. sw.js MUST keep bypassing ANALYTICS_HOSTS: the SW is cache-first
+   for non-HTML, so a cached /count response would answer every later ping locally and silently kill
+   reporting while looking healthy. sw.js CACHE_VERSION bumped v1->v2.
  - 2026-07-31b: FRAMING + FEEL + E22 REACHABILITY (user review). Full detail in research/CHANGELOG.md.
    (1) OFF-CENTRE OPENING FRAME. The globe was centred in the whole viewport, but the settings drawer is a
    permanent 320px dock on desktop, so it sat right of the centre of the VISIBLE area. Uses an off-axis
@@ -2258,12 +2294,22 @@ const SCENARIOS = [
     pole: { lat: -14, lon: 31 }, shiftAngleDeg: 104, bulgeRigidity: 1.0,
     layers: { showEarthquakes: true, showVolcanoes: true, faultStyle: true },
     camera: { lat: 0, lon: 31, distance: 3.2 },
-    caption: "The ECDO scenario: a 104° flip along the 31°E meridian to ~14°S/31°E (southern Zambia), via a claimed core-mantle 'Dzhanibekov' tumble. An independently-developed hypothesis (The Ethical Skeptic), not peer-reviewed and outside mainstream geophysics — the engine stays cause-agnostic and just shows the kinematics." },
-  { id: 'zacharias', label: 'Zacharias — Gulf of Guinea', standing: 'speculative', standingWord: 'observational claim · not independently verified',
+    caption: "The ECDO scenario: a 104° flip along the 31°E meridian to ~14°S/31°E (southern Zambia), via a claimed core-mantle 'Dzhanibekov' tumble. From The Ethical Skeptic (Roger B. Cunningham) — first published 2020, expanded in the 2024 master article and the 2026 book <i>Inversion — ECDO Theory</i>. Independently developed, not peer-reviewed and outside mainstream geophysics — the engine stays cause-agnostic and just shows the kinematics. The 14°S/31°E figure matches the author's own ECDOview tool." },
+  { id: 'zacharias', label: 'Zacharias · GEOSYNC — Gulf of Guinea', standing: 'speculative', standingWord: 'observational claim · not independently verified',
     pole: { lat: -0.8, lon: 2 }, shiftAngleDeg: 90.8, bulgeRigidity: 1.0,
     layers: { showEarthquakes: true, showVolcanoes: true },
     camera: { lat: 0, lon: 2, distance: 3.2 },
-    caption: "A ~90.8° shift to the Gulf of Guinea, from the Zacharias / GEOSYNC model (@zachariaspro, geosyncmonitor.com). Unlike ECDO, Zacharias argues from live IERS polar-motion data that the Chandler wobble is collapsing and reads that as a TPW precursor — an observational method, not a causal story. The wobble collapse is real and still holding as of 2026, but Jeon et al. 2025 (GRL) tie it to a mundane 2010–2011 mass-redistribution event rather than an approaching shift. Coordinates are sourced via secondary aggregation (Sunfellow's index + a screenshot of the live tool) since geosyncmonitor.com is an un-crawlable JS app — not independently fetched. The pole is arbitrary either way — the engine is cause-agnostic." },
+    caption: "A ~90.8° shift to the Gulf of Guinea, from the Zacharias · GEOSYNC model (@zachariaspro, geosyncmonitor.com). Unlike ECDO, Zacharias argues from live IERS polar-motion data that the Chandler wobble is collapsing and reads that as a TPW precursor — an observational method, not a causal story. The collapse is real — amplitude fell from ~150 mas to under ~10 mas between about 2015 and 2020 — but the premise that it signals an approaching shift has not held up: the wobble <b>re-excited around 2020–2021</b>, with a roughly 180° phase reversal (Shi et al. 2025, <i>J. Geodesy</i>). Both the fading and the return are attributed to ordinary surface mass redistribution — 2011–2012 continental air and water changes (Jeon et al. 2025, <i>GRL</i>) and hydrological/cryospheric mass shifts measured by GRACE/GRACE-FO. A wobble that collapses and then comes back is weak evidence for an imminent pole shift. Coordinates are sourced via secondary aggregation (Sunfellow's index + a screenshot of the live tool) since geosyncmonitor.com is an un-crawlable JS app — not independently fetched. The pole is arbitrary either way — the engine is cause-agnostic." },
+  // Added 2026-07-31 (research/RESEARCH_7): the app shipped Hapgood/ECDO/Zacharias, but Davidson is the
+  // THIRD pole in the widely-cited "three different pole locations" framing, so leaving him out
+  // misrepresented the landscape by omission. Distinct on every axis — 75° (not 104°, not 90.8°), a
+  // different hemisphere, and a solar rather than internal cause. Preset = coordinates + a graded caption;
+  // no mechanism is added and the engine stays cause-agnostic.
+  { id: 'davidson', label: 'Davidson — Bay of Bengal (75°)', standing: 'speculative', standingWord: 'micronova premise · not possible for a main-sequence star',
+    pole: { lat: 15, lon: 90 }, shiftAngleDeg: 75, bulgeRigidity: 1.0,
+    layers: { showEarthquakes: true, showVolcanoes: true, solarCoupling: true },
+    camera: { lat: 15, lon: 90, distance: 3.2 },
+    caption: "A ~75° shift to the Bay of Bengal (~15°N/90°E), from Ben Davidson / Suspicious0bservers — the crust 'unlocks' from the mantle during a solar <i>micronova</i> and geomagnetic collapse, on a claimed ~12,000-year disaster cycle. This pole traces back to Chan Thomas, <i>The Adam and Eve Story</i>. The stated mechanism does not work: a micronova is a thermonuclear runaway on a <b>white dwarf in a binary system</b>, and the Sun is a main-sequence star with no solid surface and no companion. The real adjacent science is superflares on Sun-like stars (Kepler) and extreme solar proton events recorded in ¹⁴C/¹⁰Be — the Miyake events, e.g. 774/775 CE — neither of which reorients a planet. Shown because it is the third of the three widely-cited pole destinations; the engine is cause-agnostic and only draws the kinematics." },
 ];
 
 // RESPONSIVE DRAWER (2026-07-30): render the panel INSIDE #gui-drawer-body instead of auto-floating
@@ -3711,7 +3757,11 @@ function setCaptionBox(name, chipText, chipColor, text) {
   document.getElementById('scenario-name').textContent = name;
   const chip = document.getElementById('scenario-chip');
   chip.textContent = chipText; chip.style.color = chipColor;
-  document.getElementById('scenario-cap').textContent = text;
+  // innerHTML, not textContent: captions carry light emphasis (<b>/<i>) for book titles and the key
+  // claim in each one. Every string passed here is a hard-coded constant in this file (SCENARIOS
+  // captions and storyCfg step captions) — never user input, never a URL parameter. If that ever
+  // stops being true, this must go back to textContent.
+  document.getElementById('scenario-cap').innerHTML = text;
   box.style.borderLeftColor = chipColor;
   box.style.display = 'block';
   // During a guided story the transport bar's "Exit" is how you leave; hide the caption × so that
@@ -3748,8 +3798,9 @@ function applyPreset(p) {
     // reflect any uniform-backed toggles the preset touched
     uniforms.uShowStress.value  = effectsParams.showStressOverlay ? 1.0 : 0.0;
     uniforms.uShowClimate.value = climateParams.showClimate ? 1.0 : 0.0;
-    fxFolder.controllers.forEach(c => c.updateDisplay());
-    climateFolder.controllers.forEach(c => c.updateDisplay());
+    // walkControllers, NOT fxFolder.controllers — the latter does not recurse, so a preset touching a
+    // control inside Established/Debated/Unverified (faultStyle, solarCoupling…) left a stale checkbox.
+    walkControllers(gui, c => c.updateDisplay && c.updateDisplay());
   }
   computeEffects();
   // camera + caption
@@ -4803,7 +4854,70 @@ if (_installBtn) _installBtn.addEventListener('click', async () => {
   try { await _installPrompt.userChoice; } catch (e) {}
   _installPrompt = null;              // a prompt can only be used once
 });
-addEventListener('appinstalled', () => { _installPrompt = null; if (_installBtn) _installBtn.style.display = 'none'; });
+addEventListener('appinstalled', () => {
+  _installPrompt = null; if (_installBtn) _installBtn.style.display = 'none';
+  countEvent('pwa-installed', 'PWA installed');
+});
+
+// ============================================================
+//  ANALYTICS (optional, OFF until you paste a site code below).
+//
+//  WHY GOATCOUNTER AND NOT CLOUDFLARE: the question this is here to answer is "how many people install
+//  it", which needs CUSTOM EVENTS. Cloudflare Web Analytics is pageviews-only and cannot answer it.
+//  GoatCounter is cookieless, open-source, free at this scale, and takes arbitrary events.
+//
+//  SETUP (one manual step — nothing is sent anywhere until you do it):
+//    1. Make a free site at goatcounter.com; you get a code, e.g. "poleshift".
+//    2. Put it in ANALYTICS.code below and redeploy.
+//  Leaving it '' keeps the whole block inert: no script is loaded and no request is made.
+//
+//  WHAT IT RECORDS: page views, plus two custom events — 'pwa-installed' (fires on the appinstalled
+//  event) and 'pwa-launch-standalone' (once per session when the app is running as an installed app).
+//  No cookies, no identifiers, nothing about the user.
+//
+//  THE iOS CAVEAT, so the numbers are not misread: iOS fires NEITHER beforeinstallprompt NOR
+//  appinstalled. On iPhone/iPad you will therefore see ZERO 'pwa-installed' events no matter how many
+//  people add it to their Home Screen — the only iOS signal is 'pwa-launch-standalone', which counts
+//  LAUNCHES of an already-installed app, not the install itself. Treat the two events as different
+//  questions, and never add them together.
+//
+//  SERVICE WORKER: sw.js bypasses these hosts entirely. It must stay that way — the SW is cache-first
+//  for non-HTML, so a cached /count response would answer every later ping locally and silently stop
+//  reporting. See ANALYTICS_HOSTS in sw.js.
+// ============================================================
+const ANALYTICS = { code: '' };    // <-- your goatcounter site code goes here; '' = disabled
+
+function analyticsEnabled() {
+  if (!ANALYTICS.code) return false;
+  // Honour Do Not Track, and never run from a file:// or local dev origin.
+  if (navigator.doNotTrack === '1' || window.doNotTrack === '1') return false;
+  return location.protocol === 'https:';
+}
+function countEvent(path, title) {
+  if (!analyticsEnabled()) return;
+  try { window.goatcounter && window.goatcounter.count &&
+        window.goatcounter.count({ path, title, event: true }); } catch (e) { /* never break the app */ }
+}
+(function initAnalytics() {
+  if (!analyticsEnabled()) return;
+  const s = document.createElement('script');
+  s.async = true;
+  s.src = 'https://gc.zgo.at/count.js';
+  s.setAttribute('data-goatcounter', 'https://' + ANALYTICS.code + '.goatcounter.com/count');
+  s.onerror = () => {};                       // offline or blocked: silently do nothing
+  s.onload = () => {
+    // The ONLY signal iOS gives us: this session is running as an installed app. Once per session so a
+    // long session isn't counted repeatedly — it answers "was this launched installed", not "how long".
+    const standalone = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+    if (!standalone) return;
+    let already = false;
+    try { already = sessionStorage.getItem('geo_sa_counted') === '1'; } catch (e) {}
+    if (already) return;
+    try { sessionStorage.setItem('geo_sa_counted', '1'); } catch (e) {}
+    countEvent('pwa-launch-standalone', 'Launched as installed app');
+  };
+  document.head.appendChild(s);
+})();
 // iOS NEVER fires beforeinstallprompt (Apple has not implemented it), so the button above stays hidden
 // on iPhone/iPad and the user has no way to discover that this installs. Show an equivalent hint instead,
 // pointing at the manual Share → "Add to Home Screen" flow — but only in Safari on iOS, and only when
