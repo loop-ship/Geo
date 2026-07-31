@@ -57,6 +57,19 @@
    startup now); ECDO preset regression clean. NOTE: could not get a trustworthy FPS delta from the
    automation environment — the test tab reported document.hidden=true, so Chrome throttled the render
    loop; a real FPS check must be done on a focused desktop tab (user action).
+ - 2026-07-30: DRAG-TO-SET-POLE RETUNED (user: "extremely touchy"). The headline cause was NOT sensitivity
+   but an UNSTABLE FEEDBACK LOOP: the old code mapped the finger's world direction to a crust point through
+   the LIVE uRinv and set the pole from it — but setting the pole changes R, which changes which crust point
+   is under the finger, which changes the pole again. Measured with a perfectly STILL finger: the shift went
+   12°→35°→66°→103°→146°→167°→117°, diverging and oscillating. Now the gesture is RELATIVE to a reference
+   FROZEN at grab time (uRinv, the grabbed crust point, and the pole's crust direction), so the pole rotates
+   by the angular delta the finger has travelled and a still finger holds a still pole. Same still-finger
+   test after the fix: 5.4→7.0→8.0→8.7→9.1→9.4→9.6→9.7→9.8, i.e. clean geometric convergence (each step
+   ~0.65× the last = 1−DRAG_DAMP). Plus two feel fixes: an 8px DRAG_THRESHOLD_PX so a tap or stray touch
+   can no longer teleport the pole (verified: tap and 4px jitter both leave the pole untouched), and
+   DRAG_DAMP easing that filters touchscreen jitter. Net: an 80px drag now yields a controlled ~10° change
+   where it previously swung 167°. DO NOT reintroduce live-uRinv absolute mapping — that is the bug.
+   Backup: archive/geo.html.pre-sharelinks-2026-07-30.bak (drag change is on top of it).
  - 2026-07-30: SHAREABLE VIEW LINKS. A '🔗 Copy link to this view' control in Scenarios encodes the current
    scenario into the URL; opening that link reproduces the view exactly. THREE deliberate design choices,
    documented at the code block — do not "simplify" them away: (1) HASH fragment, not a query string — a
@@ -2088,20 +2101,71 @@ function poleRaycastDir(clientX, clientY) {
   return hit ? hit.point.clone().normalize() : null;   // normalize discards the undisplaced-sphere radius
 }
 
+// DRAG FEEL (retuned 2026-07-30 — the first version was reported as "extremely touchy"). Three causes,
+// three fixes; keep all three or the twitchiness comes back:
+//   1. It moved the pole on pointerDOWN, so a mere tap teleported the pole. Now a drag must exceed
+//      DRAG_THRESHOLD_PX before anything moves, so taps (and stray touches) are harmless.
+//   2. It snapped straight to the finger on every pointermove — ~120 jittery events/sec on a touchscreen.
+//      Now the pole EASES toward the finger (DRAG_DAMP per event), which filters finger jitter and turns
+//      a snap into a glide, including the initial move from wherever the pole already was.
+//   3. Absolute 1:1 mapping is worst near the globe's limb, where the sphere curves away from the camera
+//      and a few pixels of finger sweep a huge arc. The easing above is what tames that case too.
+//   4. THE REAL CAUSE of the wild behaviour: the original code was an unstable FEEDBACK LOOP. It mapped the
+//      finger's world direction to a CRUST point through the live uRinv, then set the pole from it — but
+//      setting the pole changes R, which changes which crust point sits under the finger, which changes the
+//      pole again. A perfectly still finger kept swinging the pole (measured: 12°→35°→66°→103°→146°→167°→
+//      117°, oscillating, never settling). Fix: the drag is now RELATIVE to a reference frozen at grab time
+//      (R⁻¹, the grabbed crust point, and the pole's crust direction). The pole is rotated by the same
+//      angular delta the finger has travelled since the grab, so a still finger holds a still pole and the
+//      whole thing is stable and predictable. Do NOT reintroduce live-uRinv absolute mapping here.
+const DRAG_THRESHOLD_PX = 8;    // finger slop before a drag counts as intentional
+const DRAG_DAMP = 0.35;         // 0..1 easing per event: lower = calmer/heavier, higher = snappier
+const _dragR0inv = new THREE.Matrix3();   // uRinv frozen at grab (world -> crust, pre-drag)
+const _dragCrust0 = new THREE.Vector3();  // crust point under the finger at grab
+const _dragPole0 = new THREE.Vector3();   // pole's crust direction at grab
+const _dragCrustCur = new THREE.Vector3();
+const _dragCrustTgt = new THREE.Vector3();
+const _dragQ = new THREE.Quaternion();
+const _dragPoleDir = new THREE.Vector3();
+let _poleArmed = false, _poleStartX = 0, _poleStartY = 0;
+
 renderer.domElement.addEventListener('pointerdown', (e) => {
   if (!dragPoleParams.dragToSetPole) return;
   const dir = poleRaycastDir(e.clientX, e.clientY);
-  if (!dir) return;                    // missed the globe -> leave OrbitControls doing its normal thing
-  _poleDragging = true;
-  controls.enabled = false;            // hand this gesture to pole-dragging instead of orbiting
-  setPoleFromWorldDir(dir);
+  if (!dir) return;                                    // missed the globe -> let OrbitControls have it
+  _poleArmed = true;                                   // armed, but NOT yet dragging: a tap won't move the pole
+  _poleStartX = e.clientX; _poleStartY = e.clientY;
+  // FREEZE the reference frame for this gesture (this is what breaks the feedback loop)
+  _dragR0inv.copy(uniforms.uRinv.value);
+  _dragCrust0.copy(dir).applyMatrix3(_dragR0inv).normalize();
+  _dragCrustCur.copy(_dragCrust0);
+  _dragPole0.copy(latLonToDir(shiftParams.newPoleLat, shiftParams.newPoleLon)).normalize();
 });
 renderer.domElement.addEventListener('pointermove', (e) => {
-  if (!_poleDragging) return;
+  if (!_poleArmed) return;
+  if (!_poleDragging) {
+    if (Math.hypot(e.clientX - _poleStartX, e.clientY - _poleStartY) < DRAG_THRESHOLD_PX) return;
+    _poleDragging = true;
+    controls.enabled = false;          // only now take the gesture from the camera
+  }
   const dir = poleRaycastDir(e.clientX, e.clientY);
-  if (dir) setPoleFromWorldDir(dir);
+  if (!dir) return;                    // finger slid off the globe -> hold the last position
+  // where the finger is now, in the FROZEN crust frame; ease toward it to filter touch jitter
+  _dragCrustTgt.copy(dir).applyMatrix3(_dragR0inv).normalize();
+  _dragCrustCur.lerp(_dragCrustTgt, DRAG_DAMP).normalize();
+  // rotate the pole by the angular delta the finger has travelled since the grab
+  _dragQ.setFromUnitVectors(_dragCrust0, _dragCrustCur);
+  _dragPoleDir.copy(_dragPole0).applyQuaternion(_dragQ).normalize();
+  const { lat, lon } = dirToLatLon(_dragPoleDir);
+  const prevAnimate = shiftParams.animateShift;
+  shiftParams.animateShift = false;    // live drag: no 1.4s ease queued per event
+  shiftParams.newPoleLat = lat; shiftParams.newPoleLon = lon;
+  updateShift();                       // SAME setter the sliders/presets use
+  shiftParams.animateShift = prevAnimate;
+  poleFolder.controllers.forEach(c => c.updateDisplay());
 });
 addEventListener('pointerup', () => {
+  _poleArmed = false;
   if (!_poleDragging) return;
   _poleDragging = false;
   controls.enabled = true;
