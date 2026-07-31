@@ -57,6 +57,25 @@
    startup now); ECDO preset regression clean. NOTE: could not get a trustworthy FPS delta from the
    automation environment — the test tab reported document.hidden=true, so Chrome throttled the render
    loop; a real FPS check must be done on a focused desktop tab (user action).
+ - 2026-07-31: FIRST-IMPRESSION DEFAULTS + "TRY THIS" HINTS (user review). (1) Bulge wireframe and
+   spin-axis line now default OFF — the cyan wireframe ellipsoid ("the grid like thing") is a technical
+   overlay that clutters arrival. This ALSO fixes a bug the approachability pass introduced: those two
+   toggles are hidden from Simple mode, so a Simple-mode user was seeing the wireframe with NO WAY to turn
+   it off. (2) Auto-rotate defaults ON so the globe reads as alive; OrbitControls resumes after a drag so
+   it never fights the user. (3) Photoreal Earth defaults ON *without* undoing the lazy-load perf work —
+   ensurePhotorealLoaded() is kicked at startup but uPhotoreal still only rises once all three textures
+   land, so first paint stays on the data colouring and upgrades a moment later; floodOverPhoto stays true
+   so a shift's flood remains visible over the imagery. LANDMINE FOUND AND FIXED: showBulge/showAxis/
+   autoRotate were only ever applied inside their GUI onChange handlers, so changing the defaults alone
+   did NOTHING (the meshes kept Three.js's visible=true) — an explicit apply-at-startup block was added;
+   keep it in sync if a new view toggle appears. (4) New #hint-chip cycles one short actionable tip every
+   12s (drag/zoom, play the story, try a scenario, turn off auto-rotate, Detail, share link, honest
+   limitations), dismissed permanently via localStorage geo_hints_done — the SAME pattern as the first-run
+   explainer and iOS install hint, reused rather than a third mechanism. Hidden during a story and with
+   body.ui-hidden. VERIFIED: all four defaults read correctly, 3 photoreal textures fetched, terrain loads,
+   hint shows/cycles and stays dismissed across reload, no console errors. NOT visually confirmed here —
+   screenshots time out because auto-rotate keeps the render loop busy in a throttled background tab.
+   Backup: archive/geo.html.pre-phase0-2026-07-31.bak.
  - 2026-07-30: DRAG-TO-SET-POLE RETUNED (user: "extremely touchy"). The headline cause was NOT sensitivity
    but an UNSTABLE FEEDBACK LOOP: the old code mapped the finger's world direction to a crust point through
    the LIVE uRinv and set the pole from it — but setting the pole changes R, which changes which crust point
@@ -762,6 +781,26 @@
     font-size: 11.5px; letter-spacing: 0.04em; word-break: break-all; text-align: center;
     box-shadow: 0 14px 44px rgba(0,0,0,0.5);
   }
+  /* "Try this" hint chip — bottom-left, above the readout; dismissed permanently via its × */
+  #hint-chip {
+    display: none; position: fixed; z-index: 5;
+    left: calc(26px + env(safe-area-inset-left, 0px));
+    bottom: calc(64px + env(safe-area-inset-bottom, 0px));
+    max-width: min(330px, calc(100vw - 60px));
+    background: var(--panel); border: 1px solid var(--edge); border-left: 2px solid var(--cyan);
+    border-radius: 6px; backdrop-filter: blur(8px); padding: 8px 30px 8px 11px;
+    color: var(--ink-dim); font-size: 10.5px; line-height: 1.5; letter-spacing: 0.02em;
+  }
+  #hint-chip b { color: var(--cyan); font-weight: 600; }
+  #hint-chip .x {
+    position: absolute; top: 5px; right: 6px; width: 18px; height: 18px; cursor: pointer;
+    background: transparent; border: 1px solid var(--edge); border-radius: 4px;
+    color: var(--ink-dim); font-size: 11px; line-height: 1; padding: 0;
+  }
+  #hint-chip .x:hover { color: var(--cyan); border-color: var(--cyan); }
+  body.ui-hidden #hint-chip { display: none !important; }
+  /* while a story plays the bottom-left is busy with the narration band + transport */
+  body.story-active #hint-chip { display: none !important; }
   #ios-install-tip b { color: var(--cyan); }
   #ios-install-tip .dim { color: var(--ink-dim); font-size: 11px; }
   #ios-install-tip button {
@@ -924,6 +963,11 @@
   <div id="gui-drawer-body"></div>
   <!-- Simple mode hides the expert panels; this makes the way back obvious (Simple/Advanced switch also works) -->
   <button id="show-all-controls" title="Show every control">⚙ Show all controls</button>
+</div>
+
+<div id="hint-chip">
+  <button class="x" id="hint-close" aria-label="Dismiss hints">×</button>
+  <span id="hint-text"></span>
 </div>
 
 <div id="title" class="hud">
@@ -1975,11 +2019,17 @@ const remap01 = (x, a, b) => (b === a ? (x >= b ? 1 : 0) : clamp01((x - a) / (b 
 // ============================================================
 //  GUI — vertical exaggeration is the Stage-1 interactive control.
 // ============================================================
+// FIRST-IMPRESSION DEFAULTS (2026-07-31). The bulge wireframe and spin-axis line are technical
+// overlays: useful once you know what they are, clutter on arrival ("the grid like thing"). They are
+// also hidden from Simple mode by the approachability pass, which meant a Simple-mode user saw the
+// wireframe with NO WAY to switch it off — so defaulting them off fixes that too. Auto-rotate on so
+// the globe reads as alive rather than inert; OrbitControls resumes it after a drag, so it never
+// fights the user, and the hint chip tells people how to stop it. Advanced can restore all three.
 const params = {
   verticalExaggeration: 25,   // x-factor shown to user; maps to uExag
-  showBulge: true,
-  showAxis: true,
-  autoRotate: false,
+  showBulge: false,
+  showAxis: false,
+  autoRotate: true,
 };
 function applyExag() {
   // map a friendly 1..50x onto displacement amplitude in world units
@@ -2041,6 +2091,12 @@ gui.add(params, 'verticalExaggeration', 1, 50, 1).name('Vert. Exaggeration').onC
 gui.add(params, 'showBulge').name('Show Bulge (rigid)').onChange(v => { bulge.visible = v; });
 gui.add(params, 'showAxis').name('Show Spin Axis').onChange(v => { spinAxis.visible = v; capN.visible = v; capS.visible = v; });
 gui.add(params, 'autoRotate').name('Auto-rotate view').onChange(v => { controls.autoRotate = v; });
+// APPLY the defaults at startup. These were previously only set inside the onChange handlers, so the
+// meshes kept Three.js's default visible=true regardless of params — changing the defaults above without
+// this would have silently done nothing. Keep this in sync if a new view toggle is added.
+bulge.visible = params.showBulge;
+spinAxis.visible = params.showAxis; capN.visible = params.showAxis; capS.visible = params.showAxis;
+controls.autoRotate = params.autoRotate;
 
 // ---- Stage 2: pole-shift controls ----
 const poleFolder = gui.addFolder('Pole shift');
@@ -3763,7 +3819,12 @@ const SUN_R    = 0.9;                 // Sun visual radius (world units)
 function _sunPos() { return uniforms.uLightDir.value.clone().normalize().multiplyScalar(SUN_DIST); }
 function _markBloom(o) { o.traverse(c => c.layers && c.layers.enable(BLOOM_LAYER)); o.layers && o.layers.enable(BLOOM_LAYER); }
 
-const cineParams = { quality: 'off', showCME: false, showFieldLines: false, photoreal: false, floodOverPhoto: true, newFloodTint: 0.15, oceanDeep: '#1c4a6b' };
+// photoreal defaults ON (2026-07-31) for a better first impression. This does NOT undo the lazy-loading
+// perf work: the textures are still fetched asynchronously, uPhotoreal only rises once ALL THREE have
+// arrived (see updatePhotoreal), so first paint still happens immediately on the data colouring and the
+// globe upgrades to imagery a moment later. floodOverPhoto stays true so a shift's flood remains visible
+// over the imagery rather than being hidden by it.
+const cineParams = { quality: 'off', showCME: false, showFieldLines: false, photoreal: true, floodOverPhoto: true, newFloodTint: 0.15, oceanDeep: '#1c4a6b' };
 let _driverRestore = null;   // E21: stashes the user's cinematic/zoom state while the driver sequence overrides it
 
 // ---- shared GLSL noise (value-noise fBM) for the Sun surface --------------------------------------
@@ -4101,6 +4162,10 @@ cineFolder.add(cineParams, 'quality', ['off', 'medium', 'cinema']).name('Cinemat
 cineFolder.add(cineParams, 'showCME').name('Earth-directed CME').onChange(applyQuality);
 cineFolder.add(cineParams, 'showFieldLines').name('Magnetosphere Field Lines').onChange(applyQuality);
 cineFolder.add(cineParams, 'photoreal').name('Photoreal Earth').onChange(() => { ensurePhotorealLoaded(); updatePhotoreal(); });
+// photoreal is ON by default now, so kick the (async, non-blocking) fetch at startup. Without this the
+// default would silently never load, since ensurePhotorealLoaded is otherwise only reached via this
+// toggle or cinema quality. First paint is unaffected — uPhotoreal stays 0 until all three arrive.
+if (cineParams.photoreal) ensurePhotorealLoaded();
 cineFolder.add(cineParams, 'floodOverPhoto').name('Keep flood on photoreal').onChange(() => { uniforms.uPhotoFloodKeep.value = cineParams.floodOverPhoto ? 1.0 : 0.0; });
 cineFolder.add(cineParams, 'newFloodTint', 0, 1, 0.05).name('New-flood tint (blend↔distinct)').onChange(v => { uniforms.uNewFloodTint.value = v; });
 cineFolder.addColor(cineParams, 'oceanDeep').name('Deep-water colour').onChange(v => { uniforms.uOceanDeep.value.set(v); });
@@ -4322,6 +4387,37 @@ addEventListener('appinstalled', () => { _installPrompt = null; if (_installBtn)
         _installBtn.style.display = 'none';
       });
     }
+  });
+})();
+
+// ---------- "TRY THIS" HINT CHIP (2026-07-31) ----------
+// A newcomer lands on a globe with no obvious first move. This cycles one short, actionable tip at a
+// time in the corner. Dismissal is permanent via localStorage — the SAME pattern as the first-run
+// explainer (geo_seen_intro) and the iOS install hint, deliberately reused rather than inventing a
+// third mechanism. Hidden while a story plays (the bottom-left is busy) and with body.ui-hidden.
+const HINTS = [
+  'Drag the globe to look around · pinch or scroll to zoom.',
+  'Press <b>▶ Play guided story</b> for a narrated walkthrough.',
+  'Try a scenario: <b>Hapgood</b>, <b>ECDO</b> or <b>Zacharias</b>.',
+  'Globe spinning? Turn off <b>Auto-rotate</b> in Controls.',
+  'Use <b>Detail</b> to show more or fewer markers.',
+  'Tap <b>🔗 Copy link to this view</b> to share your scenario.',
+  'Open <b>Honest limitations</b> to see how solid each effect is.',
+];
+(function hintChip() {
+  const chip = document.getElementById('hint-chip'), txt = document.getElementById('hint-text');
+  if (!chip || !txt) return;
+  let dismissed = false;
+  try { dismissed = localStorage.getItem('geo_hints_done') === '1'; } catch (e) {}
+  if (dismissed) return;
+  let i = 0;
+  const show = () => { txt.innerHTML = HINTS[i % HINTS.length]; chip.style.display = 'block'; i++; };
+  show();
+  const timer = setInterval(show, 12000);
+  document.getElementById('hint-close').addEventListener('click', () => {
+    clearInterval(timer);
+    chip.style.display = 'none';
+    try { localStorage.setItem('geo_hints_done', '1'); } catch (e) {}
   });
 })();
 
