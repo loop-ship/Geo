@@ -57,6 +57,20 @@
    startup now); ECDO preset regression clean. NOTE: could not get a trustworthy FPS delta from the
    automation environment — the test tab reported document.hidden=true, so Chrome throttled the render
    loop; a real FPS check must be done on a focused desktop tab (user action).
+ - 2026-07-31d: SCIENTIFIC-STANDING KEY MOVED TO THE BOTTOM (user request), one nowrap line. It sat
+   top-centre, crowding the title and the top of the globe for what is a reference strip, not a control.
+   Header text shortened "Scientific standing" -> "Standing" so it holds one line on a phone (the three
+   chips already carry the meaning). Hidden during a story — the transport bar owns the bottom centre.
+   THE BOTTOM-LEFT IS NOW AN EXPLICIT STACK, layoutBottomStack(): readout (anchored by CSS), then the
+   standing key on NARROW screens, then the hint chip, each parked above the measured top of the one
+   below. No fixed offsets — that is exactly how the chip's old hard-coded bottom:64px ended up under a
+   taller readout. On wide screens the key is centred at the bottom by CSS instead (the readout never
+   reaches the middle there) and drops out of the stack. positionHintChip() is now a thin alias.
+   MUST be called unconditionally at init, not only from the hint-chip path: a returning visitor has
+   hints dismissed, so that path never runs and a narrow screen would leave the key on the readout.
+   Mobile #scenario top 258px -> 172px, reclaiming the space the top-anchored key used to occupy.
+   Verified at 1662x915: one line, 24px tall, no overlap with readout/title; narrow branch exercised by
+   patching matchMedia (parks 10px above the readout, restores to bottom-centre when wide).
  - 2026-07-31d: POLE MARKERS REWORKED (user: "not obvious enough"). Before: the OLD pole was a 0.028 sphere
    on a 0.03-long stalk (~8 px), and the NEW pole had NO MARKER AT ALL — it was implicitly "the top of the
    globe", which only reads if you already know the spin axis is fixed. That is the single most important
@@ -764,15 +778,21 @@
     width: 13px; height: 13px; border: 1px solid currentColor; border-radius: 50%;
     text-align: center; vertical-align: middle; cursor: help; flex: 0 0 auto;
   }
+  /* SCIENTIFIC-STANDING KEY (moved to the bottom 2026-07-31). It used to sit top-centre, where it
+     crowded the title and the top of the globe for something that is a reference strip, not a control.
+     Now a single nowrap line at the bottom — see layoutBottomStack() for the narrow-screen case, where
+     it parks above the readout instead of centring (the readout can be nearly full width on a phone). */
   #standing-key {
-    position: fixed; z-index: 3; left: 50%; top: calc(16px + env(safe-area-inset-top, 0px)); transform: translateX(-50%);
-    display: flex; gap: 12px; align-items: center;
+    position: fixed; z-index: 3; left: 50%; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%);
+    display: flex; gap: 10px; align-items: center; white-space: nowrap;
     background: var(--panel); border: 1px solid var(--edge); border-radius: 6px;
-    padding: 6px 12px; backdrop-filter: blur(8px);
+    padding: 5px 11px; backdrop-filter: blur(8px);
   }
-  #standing-key .hdr { font-size: 8.5px; letter-spacing: 0.12em; color: var(--ink-dim); text-transform: uppercase; }
-  #standing-key .k { font-size: 9.5px; letter-spacing: 0.04em; }
+  #standing-key .hdr { font-size: 8px; letter-spacing: 0.1em; color: var(--ink-dim); text-transform: uppercase; }
+  #standing-key .k { font-size: 9px; letter-spacing: 0.03em; }
   #standing-key .k b { font-weight: 700; margin-right: 2px; }
+  /* during a story the transport bar owns the bottom centre, and the run declutters the HUD anyway */
+  body.story-active #standing-key { display: none; }
 
   /* E18 — floating label by the perturbing body */
   #body-label {
@@ -1049,12 +1069,15 @@
     #readout { font-size: 9px; }
     #legend, #legend2 { gap: 8px; }
     #disclosure { padding: 20px 18px; font-size: 12px; }
-    /* mobile: standing-key stops center-colliding with the title/gear — restack it left, below the friendly bar */
+    /* mobile: the readout can be nearly full width down here, so the key can't centre — left-align it and
+       let layoutBottomStack() park it above the readout (bottom is set in JS, not here). */
     #standing-key {
-      left: calc(26px + env(safe-area-inset-left, 0px)); top: calc(172px + env(safe-area-inset-top, 0px)); transform: none; flex-wrap: wrap; gap: 8px 12px; max-width: calc(100vw - 52px);
+      left: calc(26px + env(safe-area-inset-left, 0px)); transform: none;
+      max-width: calc(100vw - 52px); gap: 8px; padding: 4px 9px;
     }
-    /* mobile: push the (preset) story/scenario caption clear below the restacked standing-key legend */
-    #scenario { top: calc(258px + env(safe-area-inset-top, 0px)); max-width: calc(100vw - 52px); }
+    /* the caption used to be pushed to 258px to clear the top-anchored standing key; the key has moved to
+       the bottom, so it reclaims that space */
+    #scenario { top: calc(172px + env(safe-area-inset-top, 0px)); max-width: calc(100vw - 52px); }
     /* mobile: the transport bar was wider than the screen (240px scrubber + fixed button widths), so the
        Pause button + Step counter got clipped off both edges. Span the viewport with margins and let the
        scrubber flex to fill, so everything fits any phone width. */
@@ -4396,7 +4419,9 @@ applyStandingBadges();
 (function () {
   const k = document.getElementById('standing-key');
   if (!k) return;
-  k.innerHTML = '<span class="hdr">Scientific standing</span>' +
+  // "Standing", not "Scientific standing" — the strip has to hold one line on a phone, and the three
+  // chips beside it already carry the meaning.
+  k.innerHTML = '<span class="hdr">Standing</span>' +
     ['established', 'contested', 'speculative'].map(t => {
       const s = STANDING[t];
       return '<span class="k" style="color:' + s.color + '"><b>' + s.icon + '</b>' + s.word + '</span>';
@@ -4954,6 +4979,10 @@ setUIMode(true);
 // Re-frame now that the mode is settled: Simple hides .readout-adv, so the readout block the framing
 // clamp measures is a different height than it was at module-eval time.
 applyFrameOffset();
+// …and lay out the bottom stack. Must run unconditionally, NOT only from the hint chip: a returning
+// visitor has hints dismissed, so that path never fires and the standing key would keep the CSS
+// bottom-centre offset on a narrow screen, landing on top of the readout.
+layoutBottomStack();
 // A shared link restores its scenario on load. Done AFTER setUIMode so the GUI exists to be refreshed,
 // and it suppresses the first-run explainer — someone arriving via a link wants the view, not onboarding.
 let _fromSharedLink = false;
@@ -5098,12 +5127,33 @@ function countEvent(path, title) {
 // it underneath the chip. So park the chip just above whatever the readout's actual top edge is, in
 // viewport coords (which already include the safe-area insets baked into #readout's own bottom/left).
 // Called on show, on each 12 s cycle, on resize, and whenever the monument panel toggles.
-function positionHintChip() {
-  const chip = document.getElementById('hint-chip'), ro = document.getElementById('readout');
-  if (!chip || !ro || chip.style.display === 'none') return;
-  const top = ro.getBoundingClientRect().top;
-  chip.style.bottom = Math.max(64, Math.round(window.innerHeight - top + 12)) + 'px';
+function positionHintChip() { layoutBottomStack(); }
+
+// The bottom-left is a STACK, not a set of independently-placed boxes: readout (anchored by CSS), then
+// the standing key on narrow screens, then the hint chip. Each is parked above the measured top of the
+// one below, so nothing has to guess a fixed offset — which is exactly how the chip's old hard-coded
+// bottom:64px ended up underneath a taller readout. On wide screens the standing key is centred at the
+// bottom by CSS instead (there is room there, and the readout never reaches the middle), so it drops out
+// of the stack and only the chip is positioned.
+function layoutBottomStack() {
+  const ro = document.getElementById('readout'); if (!ro) return;
+  const key = document.getElementById('standing-key');
+  const chip = document.getElementById('hint-chip');
+  const narrow = !window.matchMedia('(min-width: 760px)').matches;
+  let above = window.innerHeight - ro.getBoundingClientRect().top + 10;   // px above the viewport bottom
+  if (key) {
+    if (narrow) {
+      key.style.bottom = Math.round(above) + 'px';
+      above += key.getBoundingClientRect().height + 8;
+    } else {
+      key.style.bottom = '';        // wide: hand it back to the CSS bottom-centre rule
+    }
+  }
+  if (chip && chip.style.display && chip.style.display !== 'none') {
+    chip.style.bottom = Math.max(64, Math.round(above)) + 'px';
+  }
 }
+addEventListener('resize', layoutBottomStack);
 const HINTS = [
   'Drag the globe to look around · pinch or scroll to zoom.',
   'Press <b>▶ Play guided story</b> for a narrated walkthrough.',
