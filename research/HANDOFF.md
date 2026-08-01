@@ -1,12 +1,12 @@
-# HANDOFF — Pole-Shift Simulator (as of 2026-07-31b)
+# HANDOFF — Pole-Shift Simulator (as of 2026-07-31d)
 
 Read `geo.html`'s header comment FIRST — it is the source of truth for build state, locked
 decisions, physics constants with provenance, and landmines. This file covers only what that
 header can't: **live status, what's verified vs. assumed, the regression oracles that matter, and
 the active thread.**
 
-**Starting cold? Read §1, then §7 — the theory/attribution audit is the live piece of work, and it
-is a PLANNING task. §2 lists what is owed but unverified.**
+**Starting cold? Read §1, then §2 — §2 is the only list of things actually outstanding. Everything in
+§3, §6 and §7 has shipped and is live; those sections exist so you don't break them.**
 
 ---
 
@@ -21,9 +21,12 @@ offline), the approachability pass (neutral terminology, plain-English panels, S
 defaults, calmer marker density), iOS/Safari hardening, shareable view links, a drag-to-set-pole
 fix, first-impression defaults + hint chip, a responsive opening camera frame, and **E22 monument
 alignments** (§3) — which closes the last known capability gap — plus an off-centre opening frame,
-proximity-scaled orbit/zoom sensitivity, and the monument-needle visibility fix (§6).
+proximity-scaled orbit/zoom sensitivity, the monument-needle visibility fix (§6), the theory
+and attribution audit (§7), and a rework of the old/new pole markers into labelled pins with a
+great-circle travel arc.
 
-**Next up: a THEORY / ATTRIBUTION AUDIT — see §7. It is a PLANNING task, not an execution task.**
+**No feature work is in flight.** The theory/attribution audit (§7) and the pole-marker rework
+both shipped. What remains is verification the user must do on real hardware — see §2.
 
 **Working agreement with the user:** the loop is **review → research → plan → revise → ship**.
 "Research" means look *outward* (comparable tools, current literature, best practice), not re-read
@@ -48,11 +51,12 @@ the old marker baseline exactly (2,207 quakes / 62 volcanoes).
 - Offline on iPhone after a first load (airplane mode).
 - Visual confirmation of the newest defaults (no wireframe, photoreal, auto-rotate) and the new
   portrait camera framing.
-- **The 2026-07-31b visual changes were never seen by anyone**: the off-centre opening frame, the
-  ~8% smaller globe (margin 0.80→0.74), the thicker monument needles, and the close-in orbit/zoom
-  slowdown. Screenshot capture failed on every attempt that session (12+, both tool paths, with
-  auto-rotate already off), so the framing was verified numerically from live DOM rects and the
-  needle fix is arithmetic. **All four want an eyeball on a real focused tab.**
+- **Every visual change from 2026-07-31b–d was verified numerically, never seen**: the off-centre
+  opening frame, the ~8% smaller globe (margin 0.80→0.74), the thicker monument needles, the close-in
+  orbit/zoom slowdown, and the new pole pins + travel arc. Screenshot capture failed on every attempt
+  across the whole session (~20, both tool paths, with auto-rotate off), so geometry was checked from
+  live DOM rects and projected label coordinates instead. **All of it wants an eyeball on a real
+  focused tab**; each is a single-constant tweak if the proportions are wrong.
 - **OPEN QUESTION for the user:** keep the globe ~8% smaller, or revert `openingDistance()`'s margin
   to 0.80? The shrink exists only to leave room for the downward nudge on laptop-sized windows
   (1536×864: 45px of nudge vs 18px; 1280×720: 24px vs 2px). On 1080p it buys nothing.
@@ -159,13 +163,15 @@ Simple-mode readout, so any taller readout slid underneath it (now `positionHint
 - **App stores** — don't, until real people are using the web version and asking.
 
 ## 5. Obvious next moves
-1. **The theory / attribution audit — §7. This is the active thread.** PLAN it first.
-2. The owed **iOS/real-device checks** in §2 — the largest unverified surface.
-3. The **Grok Build** experiment — repo is clean, standard static web code, ready to import; nothing
+1. The owed **iOS / real-device checks** in §2 — the largest unverified surface by far.
+2. **Eyeball the 07-31b–d visual changes** (§2) and settle the globe-size question.
+3. Paste a **GoatCounter site code** to switch analytics on (§8) — a user step, not a code task.
+4. The **Grok Build** experiment — repo is clean, standard static web code, ready to import; nothing
    here needs undoing for it. Untried.
-4. Whatever the user's ongoing review turns up — that loop has caught the most real problems.
+5. Whatever the user's ongoing review turns up — that loop has caught the most real problems, including
+   every defect fixed on 07-31b–d.
 
-No feature is left mid-flight; E22 was the last one.
+**Nothing is mid-flight.** No half-built feature, no uncommitted work, no unpushed commits.
 
 ---
 
@@ -187,54 +193,58 @@ No feature is left mid-flight; E22 was the last one.
 
 ---
 
-## 7. NEXT: THEORY / ATTRIBUTION AUDIT — **plan this, don't execute it**
+## 7. SHIPPED 2026-07-31c: theory / attribution audit
 
-The user's ask: *"revise all the theories — make sure ECDO aligns with what Roger Cunningham
-published etc. for everything. Is Zacharias really the good name for that? Ben Davidson's model
-overlap?"* Follow the working agreement: **research outward, produce a plan, get it revised, then
-ship.** Do not start rewriting captions or presets before the plan is agreed.
+Findings, sources and the phased plan are in **`research/RESEARCH_7_theory_audit.md`** — read it before
+touching any caption. What landed:
 
-**RESEARCH IS DONE — see `research/RESEARCH_7_theory_audit.md`.** It carries the findings, a phased
-plan, and the sources. Read it before touching any caption. Headlines:
+- **ECDO attribution**: now "The Ethical Skeptic (Roger B. Cunningham)". **Not a de-anonymisation** — he
+  publishes under his own name (book *Inversion — ECDO Theory*, April 2026, author-signed copies on his
+  own site). Pseudonym stays first because that is how the work is published and searchable. Our
+  14°S/31°E coordinates already matched his own ECDOview tool, so no numbers changed.
+- **New Davidson — Bay of Bengal preset** (15°N/90°E, **75°**). He is the third pole in the widely-cited
+  "three pole locations" framing and we shipped only Hapgood/ECDO/Zacharias, so the set misrepresented
+  the landscape by omission. Coordinates + a graded caption only; no mechanism added.
+- **Zacharias relabelled `GEOSYNC`** — it was a handle, so it read as a citable person. Labels now follow
+  one rule: use the name the work is known by (Hapgood/Davidson by author, ECDO by acronym, GEOSYNC by
+  platform). The caption still names @zachariaspro for discoverability.
+- **Factual fix that justified the audit**: the Zacharias caption claimed the Chandler-wobble collapse was
+  "still holding as of 2026". It is not — the wobble **re-excited around 2020–21** with a ~180° phase
+  reversal (Shi et al. 2025, *J. Geodesy* 99:97). Research debt from the plan is **closed**.
+  **Lesson recorded: never ship a user-visible claim phrased "as of \<year\>" — it expires silently.**
+- Two bugs found while verifying: `applyPreset` refreshed only `fxFolder.controllers` (no recursion), so
+  presets touching subfolder controls left stale checkboxes — now `walkControllers`; and `setCaptionBox`
+  used `textContent`, so caption emphasis rendered as literal tags — now `innerHTML`, **safe only because
+  every caption is a hard-coded constant in this file. If that ever stops being true, revert it.**
 
-- **Attribution settled and it is NOT a de-anonymisation.** ECDO is **Roger B. Cunningham**, who
-  publishes under his own name (book *Inversion — ECDO Theory*, April 2026; author-signed copies on
-  his own site; podcasts as "Roger Cunningham aka The Ethical Skeptic"). Cite as
-  **"The Ethical Skeptic (Roger B. Cunningham)"** — pseudonym first, because that is how the work is
-  published and searchable.
-- **Our ECDO coordinates are right.** ECDOview states NP′ as 14°S, 31°E — exactly the preset we ship.
-- **The real gap is Ben Davidson**: Bay of Bengal, ~15°N 90°E (a **75°** shift), micronova +
-  field-collapse mechanism, Chan Thomas lineage. We ship Hapgood/ECDO/Zacharias, so the widely-cited
-  "three different pole locations" framing is currently incomplete by omission.
-- **"Zacharias" is a handle, not a name** — relabel to **"Zacharias · GEOSYNC"**.
-- **Research debt before shipping**: the Chandler-wobble *re-excitation* counter-evidence for the
-  Zacharias caption is not yet firmly sourced. One targeted pull owed. Leads are in RESEARCH_7 §2.3.
+### Constraints that still bind any future theory edit
+- The engine is **cause-agnostic** — presets are coordinates plus a graded caption, nothing more.
+- **Terminology is locked** (2026-07-30): *established / DEBATED / UNVERIFIED*; "fringe"/"pseudoscience"
+  appear in **no** user-visible string — state the specific reason instead. `STANDING` keys are internal ids.
+- Any grading change updates **both** `STANDING_INFO` and the matching Model Caveats `<li>`.
+- Scenario **coordinates** are load-bearing for share links; relabelling is safe, renumbering is not.
 
-### Constraints that must survive the audit
-- The engine is **cause-agnostic** — it must not endorse any of these. Presets are coordinates plus a
-  graded caption, nothing more.
-- **Terminology is locked** (2026-07-30): displayed tiers are *established / DEBATED / UNVERIFIED*;
-  "fringe"/"pseudoscience" appear in **no** user-visible string — state the specific reason instead.
-  `STANDING` object keys are unchanged internal ids.
-- Any grading change must update **both** `STANDING_INFO` and the matching Model Caveats `<li>` —
-  single grading, two surfaces.
+### Not done from RESEARCH_7 (deliberate, low priority)
+- The "how these four differ" line for the explainer (same end state, four causes, four destinations).
+- **Explicitly rejected**: importing ECDOview's 69 sites into E22 (a short *cited* list beats a long one),
+  and their fossil/evaporite/Euler-heatmap overlays (ECDO-specific evidence, not cause-agnostic features).
 
 ---
 
-## 8. Parked question: install / usage metrics
+## 8. Analytics — BUILT, inert until a site code is pasted
 
-User asked whether they can tell when people add the app to their Home Screen. Answered but **not
-implemented — it's a privacy and architecture decision, so plan it rather than slipping it in.**
+`ANALYTICS.code` in `geo.html` is `''`, so **no script loads and nothing is sent anywhere**. Create a free
+site at goatcounter.com and paste the code to enable. **This is the user's step, not a code task.**
 
-- **Client-side signals exist**: `appinstalled` fires on install and `beforeinstallprompt` indicates
-  installability (both **Chrome/Android only — iOS fires neither**); the only iOS signal is that the
-  *current session* is running installed, via `navigator.standalone` or
-  `matchMedia('(display-mode: standalone)')`.
-- **But there is nowhere to send them.** GitHub Pages is static: no backend, and it exposes no access
-  logs. Repo Insights → Traffic covers the *repository*, not the deployed site.
-- **So it needs a third-party endpoint.** Cloudflare Web Analytics (free, cookieless, one script) or
-  GoatCounter (open-source, free at this scale) are the least-invasive fits; either can take a custom
-  event fired from `appinstalled` plus a once-per-session standalone-mode ping.
-- **Weigh against**: it adds the project's first external runtime dependency, must not break the
-  offline/service-worker story (don't precache it; let it fail silently), and is the first time the
-  app would send *anything* about a visitor anywhere. Worth being deliberate about.
+- **GoatCounter, not Cloudflare**, because the question is "how many people *install* it", which needs
+  custom events; Cloudflare Web Analytics is pageviews-only and cannot answer it. Cookieless, honours Do
+  Not Track, https only.
+- Records page views plus `pwa-installed` (the `appinstalled` event) and `pwa-launch-standalone` (once per
+  session, display-mode check).
+- **THE iOS TRAP — do not misread the numbers.** iOS fires neither `beforeinstallprompt` nor
+  `appinstalled`, so iPhone/iPad installs report **zero** `pwa-installed` forever. The only iOS signal is
+  `pwa-launch-standalone`, which counts *launches of an already-installed app*. Different questions —
+  **never sum them.**
+- **`sw.js` must keep bypassing `ANALYTICS_HOSTS`.** The SW is cache-first for non-HTML, so without the
+  bypass it would cache the `/count` ping itself and answer every later hit locally — analytics would stop
+  reporting while looking healthy. A dropped count offline is correct; a cached one is a lie.
