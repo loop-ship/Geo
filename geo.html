@@ -57,6 +57,29 @@
    startup now); ECDO preset regression clean. NOTE: could not get a trustworthy FPS delta from the
    automation environment — the test tab reported document.hidden=true, so Chrome throttled the render
    loop; a real FPS check must be done on a focused desktop tab (user action).
+ - 2026-07-31e: "PLAY THE SHIFT" REPLAY. The ask was a replay of the FLOODING, not of the pole rotating —
+   that distinction drives the design. Water, the stress overlay and the climate belts are per-fragment
+   functions of uRinv, so they animate FREE on the GPU as progress advances; the pole pins and travel arc
+   ride applyRotation likewise. The CPU markers do NOT — they normally recompute once on settle, which
+   would have shown moving water with frozen consequence markers, i.e. exactly the thing the feature is
+   for. So computeEffects re-runs on a ~250 ms throttle during a replay. That is HONEST, not cosmetic:
+   verified by scrubbing, progress 0 / 0.5 / 1 on a 70° shift gives 0 / 935 / 961 quakes — markers
+   genuinely build from nothing as the load change grows. It self-limits: a recompute over ~60 ms (dense
+   Detail) flips fxOK false and falls back to settle-only rather than tanking the frame rate. Do NOT turn
+   this into a per-frame computeEffects; the 90 ms debounce exists for a reason.
+   DRIVES shiftProgress, NOT shiftAnim — shiftAnim slerps from where you ARE to the target, so replaying
+   at the target would animate target->target and do nothing. Walking identity->full is what "watch the
+   shift" means, and it reuses the lossless pure-function path the story clock and share links use.
+   Duration is a constant ANGULAR rate (15°/s, clamped 3–9 s) so 30° and 104° read at the same speed
+   rather than the same wall-clock. easeInOutSine, deliberately gentler than the 1.4 s slide's cubic —
+   over 3–9 s a cubic makes the middle ~2x average speed, the opposite of readable.
+   Button visibility is STATE-based (shift ≥ 0.5°), not event-based, so it appears for presets, drag,
+   numeric fields AND share links with no per-path wiring. PRESETS AUTO-PLAY it instead of the 1.4 s
+   slide (user's choice) — otherwise you get a fast whoosh through 104° then a button offering to show
+   what you missed; replay never re-flies the camera or re-applies layers, so orbiting round to watch the
+   old pole travel is not undone. Stop halts IN PLACE (a partial shift is reachable via the scrubber
+   anyway). prefers-reduced-motion jumps to the end. Story start nulls the replay — it drives the same
+   shiftProgress and they would fight for the crust.
  - 2026-07-31d: SCIENTIFIC-STANDING KEY MOVED TO THE BOTTOM (user request), one nowrap line. It sat
    top-centre, crowding the title and the top of the globe for what is a reference strip, not a control.
    Header text shortened "Scientific standing" -> "Standing" so it holds one line on a phone (the three
@@ -794,6 +817,20 @@
   /* during a story the transport bar owns the bottom centre, and the run declutters the HUD anyway */
   body.story-active #standing-key { display: none; }
 
+  /* "Play the shift" — appears whenever a non-zero shift is set, from ANY route (preset, drag, numeric
+     fields, share link), because its visibility keys off shift magnitude rather than off an event. */
+  #replay-btn {
+    position: fixed; z-index: 4; left: 50%; transform: translateX(-50%);
+    bottom: calc(52px + env(safe-area-inset-bottom, 0px));   /* JS re-parks it above the standing key */
+    display: none; align-items: center; gap: 7px; cursor: pointer;
+    background: var(--panel); border: 1px solid var(--cyan); border-radius: 8px;
+    padding: 7px 14px; color: var(--cyan); backdrop-filter: blur(8px);
+    font: inherit; font-size: 10.5px; letter-spacing: 0.09em; text-transform: uppercase;
+  }
+  #replay-btn:hover { background: rgba(86,196,222,0.16); }
+  body.replay-available #replay-btn { display: flex; }
+  body.story-active #replay-btn, body.ui-hidden #replay-btn { display: none !important; }
+
   /* E18 — floating label by the perturbing body */
   #body-label {
     position: fixed; z-index: 3; display: none; pointer-events: none;
@@ -1075,6 +1112,8 @@
       left: calc(26px + env(safe-area-inset-left, 0px)); transform: none;
       max-width: calc(100vw - 52px); gap: 8px; padding: 4px 9px;
     }
+    /* narrow: everything is one left column, so the replay button left-aligns too and joins the stack */
+    #replay-btn { left: calc(26px + env(safe-area-inset-left, 0px)); transform: none; }
     /* the caption used to be pushed to 258px to clear the top-anchored standing key; the key has moved to
        the bottom, so it reclaims that space */
     #scenario { top: calc(172px + env(safe-area-inset-top, 0px)); max-width: calc(100vw - 52px); }
@@ -1178,6 +1217,7 @@
 </div>
 
 <div id="standing-key"></div>
+<button id="replay-btn" type="button"></button>
 <div id="body-label"></div>
 <div id="monu-labels"></div><!-- E22: one .monu-label span per site, created at startup, projected in tick -->
 <span id="pole-label-new" class="pole-label"></span>
@@ -2333,10 +2373,100 @@ function updateShift() {
   // a re-targeted shift means the scrubber's "full" end is the new pole; reflect that
   shiftParams.shiftProgress = 1;
   if (typeof scrubCtrl !== 'undefined') scrubCtrl.updateDisplay();
+  // A NEW shift invalidates any replay in flight, and earns a fresh "Play the shift" (not "Replay").
+  replay = null; _replayedOnce = false;
+  if (typeof updateReplayButton === 'function') updateReplayButton();
 }
 
 // Stage 6: advance the crustal slide one frame (called from tick). The water/stress shader updates live
 // via uRinv; the CPU event markers are recomputed once, on settle (cheap + avoids per-frame churn).
+// ============================================================
+//  "PLAY THE SHIFT" REPLAY (2026-07-31). The point is watching the FLOOD arrive, not the pole rotating.
+//
+//  WHY IT DRIVES shiftProgress AND NOT shiftAnim: shiftAnim slerps from wherever you ARE to the target,
+//  so replaying while already at the target would animate target->target and do nothing. This walks
+//  IDENTITY -> full shift, which is what "watch the shift happen" means, and it is the same lossless
+//  pure-function-of-progress path the story clock and share links use, so it can't drift from the UI.
+//
+//  WHAT ANIMATES FOR FREE: water/flood, the stress overlay and the climate belts are all per-fragment
+//  functions of uRinv, so they update live on the GPU every frame at zero CPU cost. The pole pins and
+//  the travel arc likewise ride applyRotation, so the amber pin emerges from the cyan one and the arc
+//  draws itself as the pole travels.
+//
+//  WHAT DOES NOT: the CPU markers (quakes, volcanoes, GIA…). They normally recompute ONCE on settle, so
+//  a replay would show moving water with frozen consequence markers — exactly the thing the feature is
+//  for. So computeEffects is re-run on a THROTTLE here (~250 ms), which is honest rather than cosmetic:
+//  at 50% progress the water has only moved half as far, so fewer sites clear the threshold, and the
+//  markers genuinely should be sparser. It self-limits — if a recompute costs more than ~60 ms (dense
+//  Detail settings), it backs off to settle-only rather than dropping the frame rate.
+//  Do NOT convert this into a per-frame computeEffects call; the 90 ms debounce exists for a reason.
+// ============================================================
+const REPLAY_DEG_PER_SEC = 15;                 // constant ANGULAR rate: a 30° shift and a 104° one read
+const REPLAY_MIN_S = 3, REPLAY_MAX_S = 9;      // at the same speed instead of the same wall-clock time
+const REPLAY_FX_MS = 250;                      // marker recompute cadence while replaying
+const REPLAY_FX_BUDGET_MS = 60;                // above this, stop recomputing mid-replay
+let replay = null;                             // { t, dur, lastFx, fxOK } while playing, else null
+let _replayedOnce = false;                     // drives "Play" vs "Replay" wording; reset per new shift
+
+function fullShiftDeg() {   // magnitude of the SET shift, independent of current progress
+  return THREE.MathUtils.radToDeg(2 * Math.acos(THREE.MathUtils.clamp(Math.abs(_qTo.w), 0, 1)));
+}
+function replayAvailable() { return fullShiftDeg() >= 0.5 && !(typeof story !== 'undefined' && story.active); }
+
+function updateReplayButton() {
+  const b = document.getElementById('replay-btn'); if (!b) return;
+  document.body.classList.toggle('replay-available', replayAvailable());
+  b.textContent = replay ? '■ Stop' : (_replayedOnce ? '↻ Replay the shift' : '▶ Play the shift');
+  if (typeof layoutBottomStack === 'function') layoutBottomStack();
+}
+
+function startReplay() {
+  if (!replayAvailable()) return;
+  shiftAnim = null;                                    // the 1.4 s slide and the replay must never overlap
+  // Someone who asked the OS not to animate things should get the end state, not a 9-second slide.
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    setShiftProgress(1); _replayedOnce = true; updateReplayButton(); return;
+  }
+  replay = { t: 0, dur: THREE.MathUtils.clamp(fullShiftDeg() / REPLAY_DEG_PER_SEC, REPLAY_MIN_S, REPLAY_MAX_S),
+             lastFx: performance.now(), fxOK: true };
+  shiftParams.shiftProgress = 0;
+  _qCur.slerpQuaternions(_qId, _qTo, 0);
+  applyRotation(_qCur);
+  computeEffects();                                    // start from the true no-shift state, so markers build up
+  updateReplayButton();
+}
+function stopReplay() {   // stop IN PLACE — a partial shift is a legitimate state the scrubber can reach too
+  if (!replay) return;
+  replay = null;
+  scheduleEffects();
+  updateReplayButton();
+}
+function advanceReplay(dt) {
+  if (!replay) return;
+  replay.t = Math.min(1, replay.t + dt / replay.dur);
+  // easeInOutSine, deliberately gentler than the 1.4 s slide's easeInOutCubic: over 3–9 s a cubic ease
+  // makes the middle roughly twice the average speed, which is the opposite of "readable".
+  const e = -(Math.cos(Math.PI * replay.t) - 1) / 2;
+  shiftParams.shiftProgress = e;
+  _qCur.slerpQuaternions(_qId, _qTo, e);
+  applyRotation(_qCur);                                 // flood + pins + arc + readout all follow from here
+  if (typeof scrubCtrl !== 'undefined') scrubCtrl.updateDisplay();
+  if (replay.t >= 1) {
+    replay = null; _replayedOnce = true;
+    setShiftProgress(1);                                // land exactly on 1 and recompute markers properly
+    computeEffects();
+    updateReplayButton();
+    return;
+  }
+  const now = performance.now();
+  if (replay.fxOK && now - replay.lastFx >= REPLAY_FX_MS) {
+    const t0 = performance.now();
+    computeEffects();
+    if (performance.now() - t0 > REPLAY_FX_BUDGET_MS) replay.fxOK = false;   // too dense: settle-only
+    replay.lastFx = performance.now();
+  }
+}
+
 function advanceShiftAnim(dt) {
   if (!shiftAnim) return;
   shiftAnim.t = Math.min(1, shiftAnim.t + dt / shiftAnim.dur);
@@ -3964,6 +4094,11 @@ function applyPreset(p) {
   // camera + caption
   if (p.camera) flyCameraTo(p.camera.lat, p.camera.lon, p.camera.distance);
   showScenario(p);
+  // A preset PRESENTS a scenario, so it plays the shift at a readable pace instead of the 1.4 s slide —
+  // otherwise you'd get a fast whoosh through 104° and then a button offering to show you what you just
+  // missed. Runs alongside the camera fly. Replay itself never re-flies the camera or re-applies layers:
+  // if you've orbited round to watch the old pole travel, pressing it again must not yank the view back.
+  startReplay();
 }
 
 // ============================================================
@@ -4261,6 +4396,8 @@ function startStory(cfg) {
   story.stepDist = storyCfg.steps.map(s => s.cam.distance);
   prepareShiftTarget(pole.lat, pole.lon);
   relaxAnim = null; shiftAnim = null;
+  // The story clock drives the SAME shiftProgress, so a replay in flight would fight it for the crust.
+  replay = null; updateReplayButton();
   story.active = true; story.T = 0; story.lastStep = -1;
   document.body.classList.add('story-active');   // CSS retargets the caption to a lower-third band + tidies the bottom bar
   if (storyCfg.driver) {   // E21: the driver sequence brings up the Sun + CME and needs room to frame the chain
@@ -4287,6 +4424,7 @@ function restoreDriverCinematic() {   // E21: undo the driver run's cinematic + 
 }
 function exitStory() {
   story.active = false; story.playing = false;
+  if (typeof updateReplayButton === 'function') updateReplayButton();   // button may become available again
   document.body.classList.remove('story-active');
   _storyEls['story-bar'].style.display = 'none';
   hideScenario();
@@ -4983,6 +5121,8 @@ applyFrameOffset();
 // visitor has hints dismissed, so that path never fires and the standing key would keep the CSS
 // bottom-centre offset on a narrow screen, landing on top of the readout.
 layoutBottomStack();
+document.getElementById('replay-btn').addEventListener('click', () => { replay ? stopReplay() : startReplay(); });
+updateReplayButton();   // no shift at load, so this just settles the button hidden
 // A shared link restores its scenario on load. Done AFTER setUIMode so the GUI exists to be refreshed,
 // and it suppresses the first-run explainer — someone arriving via a link wants the view, not onboarding.
 let _fromSharedLink = false;
@@ -5138,6 +5278,7 @@ function positionHintChip() { layoutBottomStack(); }
 function layoutBottomStack() {
   const ro = document.getElementById('readout'); if (!ro) return;
   const key = document.getElementById('standing-key');
+  const btn = document.getElementById('replay-btn');
   const chip = document.getElementById('hint-chip');
   const narrow = !window.matchMedia('(min-width: 760px)').matches;
   let above = window.innerHeight - ro.getBoundingClientRect().top + 10;   // px above the viewport bottom
@@ -5148,6 +5289,14 @@ function layoutBottomStack() {
     } else {
       key.style.bottom = '';        // wide: hand it back to the CSS bottom-centre rule
     }
+  }
+  // The replay button always sits directly above the standing key — measured, not a fixed offset, so it
+  // follows the key whether the key is centred (wide) or stacked over the readout (narrow).
+  if (btn && document.body.classList.contains('replay-available')) {
+    const kr = key ? key.getBoundingClientRect() : null;
+    const base = kr && kr.height ? (window.innerHeight - kr.top + 8) : above;
+    btn.style.bottom = Math.round(base) + 'px';
+    if (narrow) above = base + btn.getBoundingClientRect().height + 8;
   }
   if (chip && chip.style.display && chip.style.display !== 'none') {
     chip.style.bottom = Math.max(64, Math.round(above)) + 'px';
@@ -5214,6 +5363,7 @@ function tick() {
   const dt = Math.min(0.05, Math.max(0, t - _lastT)); _lastT = t;   // clamp (tab refocus / long frame)
   uniforms.uTime.value = t;
   advanceShiftAnim(dt);  // Stage 6: progress the crustal slide, if any
+  advanceReplay(dt);     // "Play the shift": walks progress 0->1 so the flood arrives at a readable pace
   advanceRelaxAnim(dt);  // ENHANCEMENT: progress the timed bulge relaxation, if any
   advanceStory(dt);      // A2: advance the guided-story master clock, if playing
   advanceCamFly(dt);     // A1: progress a guided camera move, if any
