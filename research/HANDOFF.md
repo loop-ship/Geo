@@ -1,12 +1,13 @@
-# HANDOFF — Pole-Shift Simulator (as of 2026-07-31d)
+# HANDOFF — Pole-Shift Simulator (as of 2026-08-01)
 
 Read `geo.html`'s header comment FIRST — it is the source of truth for build state, locked
 decisions, physics constants with provenance, and landmines. This file covers only what that
 header can't: **live status, what's verified vs. assumed, the regression oracles that matter, and
 the active thread.**
 
-**Starting cold? Read §1, then §2 — §2 is the only list of things actually outstanding. Everything in
-§3, §6 and §7 has shipped and is live; those sections exist so you don't break them.**
+**Starting cold? Read §1, then §2 — §2 is the only list of things actually outstanding, plus §9's backlog
+for what's next by choice rather than by omission. Everything in §3, §6, §7 and §9's "shipped this pass"
+has shipped and is live; those sections exist so you don't break them.**
 
 ---
 
@@ -25,8 +26,14 @@ proximity-scaled orbit/zoom sensitivity, the monument-needle visibility fix (§6
 and attribution audit (§7), and a rework of the old/new pole markers into labelled pins with a
 great-circle travel arc.
 
-**No feature work is in flight.** The theory/attribution audit (§7) and the pole-marker rework
-both shipped. What remains is verification the user must do on real hardware — see §2.
+**2026-08-01: loop-back review pass shipped** — analytics enabled (GoatCounter code `loopship`) and three
+Tier-1 UI-surfacing changes (share-view CTA, Bulge Rigidity Simple-mode hero card, a never-mode-gated
+plain-language stress disclaimer). All three reuse existing mechanisms, no engine change. Full detail in
+§9 below, including the Tier 2/3 backlog that's written down but deliberately NOT started this pass.
+
+**No feature work is in flight.** The theory/attribution audit (§7), the pole-marker rework, and the
+2026-08-01 loop-back pass (§9) all shipped. What remains is verification the user must do on real
+hardware (§2) plus the §9 backlog, at the user's pace.
 
 **Working agreement with the user:** the loop is **review → research → plan → revise → ship**.
 "Research" means look *outward* (comparable tools, current literature, best practice), not re-read
@@ -256,10 +263,12 @@ touching any caption. What landed:
 
 ---
 
-## 8. Analytics — BUILT, inert until a site code is pasted
+## 8. Analytics — LIVE as of 2026-08-01 (site code `loopship`)
 
-`ANALYTICS.code` in `geo.html` is `''`, so **no script loads and nothing is sent anywhere**. Create a free
-site at goatcounter.com and paste the code to enable. **This is the user's step, not a code task.**
+`ANALYTICS.code` in `geo.html` is now `'loopship'` (the user's GoatCounter site,
+`loopship.goatcounter.com`) — previously `''` = inert. The script only loads over https (the
+`analyticsEnabled()` gate), so it's silent on `localhost`/`file://` by design; it activates on the live
+Pages deploy. Nothing else below changed.
 
 - **GoatCounter, not Cloudflare**, because the question is "how many people *install* it", which needs
   custom events; Cloudflare Web Analytics is pageviews-only and cannot answer it. Cookieless, honours Do
@@ -273,3 +282,59 @@ site at goatcounter.com and paste the code to enable. **This is the user's step,
 - **`sw.js` must keep bypassing `ANALYTICS_HOSTS`.** The SW is cache-first for non-HTML, so without the
   bypass it would cache the `/count` ping itself and answer every later hit locally — analytics would stop
   reporting while looking healthy. A dropped count offline is correct; a cached one is a lie.
+
+---
+
+## 9. SHIPPED 2026-08-01: loop-back review pass, and the backlog it produced
+
+The user dropped screenshots of an external UX audit (highest/medium-impact recommendations, a
+data/fidelity tier, a "don't chase" list, a "ship three things" table) and asked for it to be filtered
+against the live code and the project's own locked decisions before acting on any of it — the "research"
+step of **review → research → plan → revise → ship**, done for real this time (external, not a re-read of
+our own code). Full plan reasoning is in the session's plan file (not tracked here verbatim); this section
+is the durable record.
+
+**The filtering mattered.** Two of the audit's twelve recommendations were already shipped —
+Simple-mode-as-default (2026-07-30) and the so-what readout's core (`updateSimpleReadout()`,
+2026-07-30) — because the reviewer worked from an outside vantage point, not this file. Also found: the
+header's old "Parked product threads... Simple mode as the DEFAULT" line was stale documentation debt
+(now deleted) — it would have led a future session to re-propose already-done work.
+
+**Shipped this pass (Tier 0 + Tier 1 only — see geo.html's newest BUILD STATUS entry for the technical
+detail):** GoatCounter enabled (§8); a "Share this view" CTA after a preset/replay completes; Bulge
+Rigidity surfaced as a Simple-mode hero card (Simple mode had *zero* visibility into the model's central
+honesty signal before this — `waterFolder` is `.adv-only`); a never-mode-gated plain-language stress
+disclaimer in both Simple and Advanced readouts.
+
+**Confirmed scope: Tier 0 + Tier 1 only, by the user's explicit choice** when asked how much to execute
+this pass. Tier 2/3 and the declined items below are written down but deliberately unstarted.
+
+### Backlog — Tier 2 (genuinely new, moderate effort, still engine-safe)
+1. **Land-flooded% / seafloor-emerged% readout**, completing the so-what card. Needs a small standalone
+   sampling function (the `renderMonumentAlignments()` pattern — called after `computeEffects()`, which
+   must not itself be grown) tallying flood/dry/exposed-seabed state over a modest grid.
+2. **City/place anchors** (NYC, London, Tokyo, Cairo, Sydney, Mumbai): fly-to via the existing
+   `flyCameraTo()`/`latLonToViewDir()` plus a one-line "was land, now ocean" (or reverse) readout at that
+   point, using the same dS/E math the shader already runs.
+3. **Fault-gated "near plate edges only" as a second default story** — one preset wiring the existing
+   `gateToFaults` (E3) + the Established-only bundle, with its own caption. Reuses E3 entirely.
+
+### Backlog — Tier 3 ("more real," lower priority under accuracy-first-then-condense)
+4. **True bathymetry**: `build/ETOPO_2022_v1_60s_surface.tif` (~465 MB, already downloaded) and
+   `build/make_etopo_terrainrgb.py` (already written, round-trip verified <0.06 m) are **both already in
+   the repo** — `earth_terrainrgb.png` still has uniform-depth oceans only because the script hasn't been
+   *run*. Single biggest visual-honesty win left; the data cost is already paid.
+5. **Mobile HUD density / "Events" chip** — lower priority than the external review framed it: Simple
+   mode (the default) already hides the dense `.readout-adv` block outright, so this mainly affects
+   Advanced-mode mobile users.
+6. iOS real-device pass and KTX2 compression — unchanged from §2 / the "possible future perf" note in
+   `geo.html`; not re-planned here, just re-affirmed.
+
+### Declined (agrees with the external review's own "don't chase" list, and with LOCKED DECISIONS)
+- More contested effect layers (solar/antipodal/deep-pref expansion) — fights the engine's own
+  cause-agnostic, uniformly-graded architecture.
+- A naive `computeEffects()` rewrite — already tried and reverted 2026-07-30; needs a real test harness.
+- Mechanism debates as user-facing content (Hapgood vs. TPW vs. micronova) — RESEARCH_7 already declined
+  this beyond one deferred explainer line.
+- A hosted "community scenario gallery" — needs a backend/hosting/moderation, which contradicts the
+  locked single-self-contained-static-file stack decision.

@@ -34,6 +34,34 @@
    atmosphere + magnetosphere field lines, photoreal Earth, driver<->cinematic integration.
  - Friendly-mode UX pass U1–U2: Simple/Advanced switch, plain-language control labels, "what am I
    looking at?" explainer.
+ - 2026-08-01: LOOP-BACK REVIEW PASS — an external UX audit (user-supplied screenshots) filtered against the
+   live code + LOCKED DECISIONS before acting on any of it; full reasoning in research/HANDOFF.md and the
+   session's plan file. Two of the audit's twelve recommendations were ALREADY SHIPPED (Simple-mode-default,
+   the so-what readout) — the reviewer worked from an outside vantage point, not this file. Shipped this
+   pass, Tier 0 + Tier 1 only (Tier 2/3 + declined items are written down in HANDOFF §backlog, unstarted):
+   (0) ANALYTICS.code set to 'loopship' (was '' = inert since 2026-07-31c).
+   (1) 'Share this view' CTA (#share-cta, promptShareCTA()) fires after a preset applies or "Play the shift"
+   finishes (both replay-completion paths in advanceReplay/startReplay) — calls the SAME shareCurrentView()
+   that was previously reachable only via one buried control in the Scenarios folder. Debounced 8s so rapid
+   replay/preset churn can't spam it; any share action (CTA or the old menu item) hides a pending prompt.
+   (2) Bulge Rigidity surfaced as a Simple-mode hero card (#bulge-hero, updateBulgeHero(), called from
+   updateSimpleReadout()) — Simple mode had ZERO visibility into the model's central honesty signal
+   (waterFolder is .adv-only, hidden entirely by body.simple-mode .adv-only{display:none}) until now. The
+   card's "Relax the bulge →" button calls startBulgeRelax(), extracted from the Advanced control's inline
+   handler so both share one code path — same waterParams.bulgeRigidity state, same animation.
+   (3) A never-mode-gated plain-language disclaimer ("not a magnitude or earthquake forecast", .hud-note)
+   added next to BOTH the Simple readout's quake/volcano counts and the Advanced "Δσ THRESH 0.01 MPa" row —
+   deliberately not gated behind Plain Language, matching the project's own rule that honesty signals must
+   never be mode-gated (set by E22's residual numbers).
+   Also removed a stale "Parked product threads" line: both items in it (Simple-mode-default, PWA/Pages
+   deploy) had already shipped 2026-07-30 — a future session would have re-proposed already-done work.
+   VERIFIED in-browser (localhost:8010, isolated tab — never the user's Stormcrow-weather window): zero
+   console errors (only unrelated MetaMask extension noise); Simple-mode-default confirmed on fresh load;
+   share CTA confirmed visually after a preset apply; bulge hero confirmed via DOM assertion (classList/
+   display/innerHTML) since the relax animation's rAF is throttled in the automation tab (document.hidden
+   === true even with focus — the documented gotcha, not a defect). GoatCounter's https-only gate means the
+   analytics line itself can't be exercised on http://localhost; it will activate on the live Pages deploy.
+   Backup: archive/geo.html.pre-loopback-2026-08-01.bak.
  - 2026-07-28: premise audit (research/RESEARCH_6_premise_audit.md) against research/RESEARCH_1–5 plus a
    live external fact-check; two accuracy fixes applied (Zacharias scenario attribution/caption rewrite,
    STANDING_INFO citation-drift cleanup for E11/E12). Full detail in the changelog's newest entry.
@@ -356,8 +384,6 @@
    complex, not copy-paste), so there is no mechanical win available there either.
  - Possible future perf (only if ever needed; FPS confirmed good by the user 2026-07-30): shader branchless
    rewrite + KTX2/Basis texture compression (needs external tooling).
- - Parked product threads (raised, not started): Simple mode as the DEFAULT for new visitors; deployment /
-   GitHub Pages / PWA packaging.
  ------------------------------------------------------------
  LOCKED DECISIONS (do not re-debate; reasoning in parens):
  - Mechanism = Hapgood-style crustal displacement: crust slides over interior, spin axis fixed
@@ -846,6 +872,11 @@
   #readout b { color: var(--cyan); font-weight: 500; }
   #readout .frame-cyan { color: var(--cyan); }
   #readout .frame-amber { color: var(--amber); }
+  /* Tier-1 (2026-08-01): a small, always-visible caveat note — never mode-gated, matching the project's
+     own rule that honesty signals must not be hidden behind a toggle. Used by the Δσ threshold readout
+     and the Simple-mode "so what" summary. */
+  .hud-note { color: var(--ink-dim); font-size: 10.5px; font-style: italic; }
+  #simple-readout .hud-note { display: block; margin-top: 2px; font-size: 10px; }
 
   /* E22 — MONUMENT ALIGNMENT panel. Deliberately a sibling of .readout-adv, NOT a child: the whole
      point of the layer is the side-by-side residual comparison, so it must survive Simple mode (which
@@ -989,6 +1020,17 @@
     font-size: 11.5px; letter-spacing: 0.04em; word-break: break-all; text-align: center;
     box-shadow: 0 14px 44px rgba(0,0,0,0.5);
   }
+  /* Share CTA (2026-08-01) — a tap-to-share INVITATION shown right after a preset/replay reveals its
+     result. Distinct from #share-toast above, which is the passive confirmation AFTER sharing. */
+  #share-cta {
+    display: none; position: fixed; z-index: 12; left: 50%; transform: translateX(-50%);
+    bottom: calc(90px + env(safe-area-inset-bottom, 0px)); max-width: min(360px, 92vw);
+    background: var(--panel); border: 1px solid var(--cyan); border-radius: 8px;
+    backdrop-filter: blur(10px); padding: 10px 18px; color: var(--ink);
+    font-size: 12px; letter-spacing: 0.02em; text-align: center; cursor: pointer;
+    box-shadow: 0 14px 44px rgba(0,0,0,0.5);
+  }
+  #share-cta:active { opacity: 0.7; }
   /* "Try this" hint chip — bottom-left, above the readout; dismissed permanently via its × */
   #hint-chip {
     display: none; position: fixed; z-index: 5;
@@ -1019,6 +1061,15 @@
   #simple-readout { display: none; font-size: 12px; color: var(--ink); margin-bottom: 2px; line-height: 1.5; }
   #simple-readout b { color: var(--cyan); font-weight: 600; }
   body.simple-mode #simple-readout { display: block; }
+  /* Tier-1 hero control (2026-08-01): Bulge Rigidity is the model's central honesty signal but lived only
+     in the Advanced-only "Oceans & sea level" folder, invisible in Simple mode. Surfaced here instead. */
+  #bulge-hero { display: none; margin-top: 4px; font-size: 11.5px; line-height: 1.5; color: var(--ink-dim); }
+  body.simple-mode #bulge-hero.show { display: block; }
+  #bulge-hero button {
+    display: inline-block; margin-top: 3px; padding: 4px 10px; cursor: pointer;
+    background: var(--cyan); border: none; border-radius: 5px; color: #05080d;
+    font: inherit; font-size: 10.5px; font-weight: 600; letter-spacing: 0.04em;
+  }
   body.ui-hidden #mode-switch { display: none !important; }
 
   /* FRIENDLY MODE U2: plain-language toggle + "what am I looking at?" explainer */
@@ -1239,13 +1290,14 @@
 
 <div id="readout" class="hud">
   <div id="simple-readout"></div>
+  <div id="bulge-hero"></div>
   <div class="readout-adv">
   <div>FRAMES &nbsp; <span class="frame-cyan">● rotational (fixed)</span> &nbsp; <span class="frame-amber">● crustal</span></div>
   <div>VERT EXAGG &nbsp;<b id="r-exag">25×</b> &nbsp;|&nbsp; SEGMENTS &nbsp;<b>384 × 192</b> &nbsp;|&nbsp; DATA &nbsp;<b id="r-data">procedural fallback</b></div>
   <div>SPIN AXIS &nbsp;<b>fixed in world space</b> &nbsp;|&nbsp; BULGE &nbsp;<b id="r-bulge">rigid</b></div>
   <div>RENDERER &nbsp;<b id="r-renderer">WebGL2</b> &nbsp;|&nbsp; FPS &nbsp;<b id="r-fps">–</b></div>
   <div>NEW POLE &nbsp;<b id="r-pole">90°, 0°</b> &nbsp;|&nbsp; CRUST SHIFT &nbsp;<b id="r-shift">0.0°</b></div>
-  <div>EVENTS &nbsp; QUAKES <b id="r-quakes">0</b> &nbsp;|&nbsp; VOLCANOES <b id="r-volc">0</b> &nbsp;|&nbsp; TRIGGERED <b id="r-trig">0</b> &nbsp;|&nbsp; SYNCH <b id="r-lod">0</b> &nbsp;|&nbsp; ERUPT <b id="r-deglac">—</b> &nbsp;|&nbsp; GIA <b id="r-gia">0</b> &nbsp;|&nbsp; SOLAR <b id="r-solar">0</b> &nbsp;|&nbsp; CASCADE <b id="r-casc">0</b> &nbsp;|&nbsp; TSUNAMI <b id="r-tsu">0</b> &nbsp;|&nbsp; FAULT N/T/S <b id="r-style">—</b> &nbsp;|&nbsp; MONU (Giza) <b id="r-monu">—</b> &nbsp;|&nbsp; Δσ THRESH <b>0.01 MPa</b> &nbsp;|&nbsp; BODY ΔCFS <b id="r-body">—</b> &nbsp;|&nbsp; FLUX P <b id="r-flux">—</b> &nbsp;|&nbsp; FAULT GATE <b id="r-fault">no data — run make_plate_boundaries.py</b></div>
+  <div>EVENTS &nbsp; QUAKES <b id="r-quakes">0</b> &nbsp;|&nbsp; VOLCANOES <b id="r-volc">0</b> &nbsp;|&nbsp; TRIGGERED <b id="r-trig">0</b> &nbsp;|&nbsp; SYNCH <b id="r-lod">0</b> &nbsp;|&nbsp; ERUPT <b id="r-deglac">—</b> &nbsp;|&nbsp; GIA <b id="r-gia">0</b> &nbsp;|&nbsp; SOLAR <b id="r-solar">0</b> &nbsp;|&nbsp; CASCADE <b id="r-casc">0</b> &nbsp;|&nbsp; TSUNAMI <b id="r-tsu">0</b> &nbsp;|&nbsp; FAULT N/T/S <b id="r-style">—</b> &nbsp;|&nbsp; MONU (Giza) <b id="r-monu">—</b> &nbsp;|&nbsp; Δσ THRESH <b>0.01 MPa</b> <span class="hud-note">(not a quake magnitude)</span> &nbsp;|&nbsp; BODY ΔCFS <b id="r-body">—</b> &nbsp;|&nbsp; FLUX P <b id="r-flux">—</b> &nbsp;|&nbsp; FAULT GATE <b id="r-fault">no data — run make_plate_boundaries.py</b></div>
   </div><!-- /readout-adv -->
   <div id="monu-panel"></div><!-- E22: filled by renderMonumentAlignments(); outside .readout-adv on purpose -->
   <div id="legend-head" class="legend-toggle">▾ MAP KEY</div>
@@ -2425,7 +2477,9 @@ function startReplay() {
   shiftAnim = null;                                    // the 1.4 s slide and the replay must never overlap
   // Someone who asked the OS not to animate things should get the end state, not a 9-second slide.
   if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-    setShiftProgress(1); _replayedOnce = true; updateReplayButton(); return;
+    setShiftProgress(1); _replayedOnce = true; updateReplayButton();
+    if (typeof promptShareCTA === 'function') promptShareCTA();
+    return;
   }
   replay = { t: 0, dur: THREE.MathUtils.clamp(fullShiftDeg() / REPLAY_DEG_PER_SEC, REPLAY_MIN_S, REPLAY_MAX_S),
              lastFx: performance.now(), fxOK: true };
@@ -2456,6 +2510,7 @@ function advanceReplay(dt) {
     setShiftProgress(1);                                // land exactly on 1 and recompute markers properly
     computeEffects();
     updateReplayButton();
+    if (typeof promptShareCTA === 'function') promptShareCTA();
     return;
   }
   const now = performance.now();
@@ -2763,7 +2818,10 @@ function advanceRelaxAnim(dt) {
   bulgeCtrl.updateDisplay();
   if (relaxAnim.t >= 1) { relaxAnim = null; scheduleEffects(); }
 }
-waterFolder.add({ relax: () => { relaxAnim = { t: 0, dur: Math.max(0.1, waterParams.relaxSeconds), from: waterParams.bulgeRigidity, to: 0 }; } }, 'relax').name('Relax Bulge → 0');
+// Named (not inline) so the Tier-1 Simple-mode hero button (updateBulgeHero(), below the readout) can
+// trigger the identical relax animation without duplicating this logic.
+function startBulgeRelax() { relaxAnim = { t: 0, dur: Math.max(0.1, waterParams.relaxSeconds), from: waterParams.bulgeRigidity, to: 0 }; }
+waterFolder.add({ relax: startBulgeRelax }, 'relax').name('Relax Bulge → 0');
 waterFolder.add(waterParams, 'relaxSeconds', 1, 30, 1).name('Relax Time (s)');
 waterFolder.add(waterParams, 'seaLevel', -8000, 8000, 50).name('Global sea level (m)').onChange(v => { uniforms.uSeaLevel.value = v; });
 waterFolder.open();
@@ -4201,6 +4259,7 @@ function applySharedView(hash) {
 
 // Share action: native share sheet on mobile (it's the expected affordance there), clipboard elsewhere.
 async function shareCurrentView() {
+  hideShareCTA();          // any share action (CTA tap or the buried menu item) dismisses a pending prompt
   const url = buildShareURL();
   const title = 'Pole-Shift Simulator';
   try {
@@ -4223,6 +4282,31 @@ function toastShare(msg, selectable) {
   t.style.display = 'block';
   clearTimeout(t._timer);
   t._timer = setTimeout(() => { t.style.display = 'none'; }, selectable ? 12000 : 2600);
+}
+// Share CTA (2026-08-01, Tier-1 review pass): surface the existing share mechanism as a call-to-action
+// right after a preset applies or "Play the shift" finishes — the moment the flood result is actually
+// visible — instead of leaving it as one buried control in the Scenarios folder. No new mechanism: this
+// just prompts, then calls the same shareCurrentView() above.
+let _shareCTATimer = null, _lastShareCTAAt = -Infinity;
+function promptShareCTA() {
+  const now = performance.now();
+  if (now - _lastShareCTAAt < 8000) return;   // debounce: don't nag on rapid replay/preset churn
+  _lastShareCTAAt = now;
+  let el = document.getElementById('share-cta');
+  if (!el) {
+    el = document.createElement('div'); el.id = 'share-cta';
+    el.addEventListener('click', shareCurrentView);
+    document.body.appendChild(el);
+  }
+  el.textContent = '🔗 Share this view';
+  el.style.display = 'block';
+  clearTimeout(_shareCTATimer);
+  _shareCTATimer = setTimeout(hideShareCTA, 7000);
+}
+function hideShareCTA() {
+  const el = document.getElementById('share-cta');
+  if (el) el.style.display = 'none';
+  clearTimeout(_shareCTATimer);
 }
 
 // ============================================================
@@ -5067,7 +5151,24 @@ function updateSimpleReadout() {   // friendly one-liner shown only in Simple mo
   const shift = g('r-shift'), q = g('r-quakes'), v = g('r-volc');
   el.innerHTML = (shift === '0.0°')
     ? 'No pole shift yet — set a New North Pole, or press <b>▶ Play guided story</b>.'
-    : 'Pole moved <b>' + shift + '</b> · <b>' + q + '</b> quake-prone sites · <b>' + v + '</b> volcanoes flagged.';
+    : 'Pole moved <b>' + shift + '</b> · <b>' + q + '</b> quake-prone sites · <b>' + v + '</b> volcanoes flagged.'
+      + '<span class="hud-note">Not a magnitude or earthquake forecast — a relative stress-change indicator.</span>';
+  updateBulgeHero(shift);
+}
+// Tier-1 hero control (2026-08-01): reuses waterParams.bulgeRigidity / startBulgeRelax() as-is — same
+// state, same animation the Advanced "Relax Bulge → 0" control drives. Only the framing + placement are
+// new. Hidden once there's no shift to flood with, or once the bulge is already relaxed (nothing left to
+// demonstrate).
+function updateBulgeHero(shiftText) {
+  const el = document.getElementById('bulge-hero'); if (!el) return;
+  const hasShift = shiftText !== '0.0°';
+  const rigid = typeof waterParams !== 'undefined' && waterParams.bulgeRigidity > 0.001;
+  el.classList.toggle('show', hasShift && rigid);
+  if (!hasShift || !rigid) return;
+  el.innerHTML = 'If the Earth’s bulge relaxes, this flood doesn’t happen — <b>zero</b> new quakes or ' +
+    'volcanoes either. <button id="bulge-hero-btn" type="button">Relax the bulge →</button>';
+  const btn = document.getElementById('bulge-hero-btn');
+  if (btn) btn.onclick = () => { if (typeof startBulgeRelax === 'function') startBulgeRelax(); };
 }
 function setUIMode(simple) {
   document.body.classList.toggle('simple-mode', simple);
@@ -5194,7 +5295,7 @@ addEventListener('appinstalled', () => {
 //  for non-HTML, so a cached /count response would answer every later ping locally and silently stop
 //  reporting. See ANALYTICS_HOSTS in sw.js.
 // ============================================================
-const ANALYTICS = { code: '' };    // <-- your goatcounter site code goes here; '' = disabled
+const ANALYTICS = { code: 'loopship' };    // <-- your goatcounter site code goes here; '' = disabled
 
 function analyticsEnabled() {
   if (!ANALYTICS.code) return false;
