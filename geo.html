@@ -2481,6 +2481,11 @@ function advanceShiftAnim(dt) {
 // function of p. Shared by the E5 scrubber AND the A2 story clock (so both are lossless/deterministic).
 function setShiftProgress(p) {
   shiftAnim = null;                                  // manual/clock progress owns the crust; cancel any slide
+  // …and any replay, for the same reason: without this, dragging "Shift amount" mid-replay is silently
+  // overwritten on the next frame and the slider looks dead until the replay ends. Safe to null here
+  // because advanceReplay() clears `replay` BEFORE its final setShiftProgress(1), and neither
+  // startReplay() nor stopReplay() routes through this function.
+  if (replay) { replay = null; if (typeof updateReplayButton === 'function') updateReplayButton(); }
   shiftParams.shiftProgress = p;
   _qCur.slerpQuaternions(_qId, _qTo, p);
   applyRotation(_qCur);

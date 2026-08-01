@@ -161,6 +161,31 @@ Simple-mode readout, so any taller readout slid underneath it (now `positionHint
 - **KTX2/Basis compression, shader branchless rewrite** — need external tooling; FPS is already good
   (user-confirmed).
 - **App stores** — don't, until real people are using the web version and asking.
+- **ECDO's abyssal-ocean-heat exhibit (Exhibit 10B) as a layer or rebuttal panel — RESEARCHED AND
+  DECLINED 2026-08-01.** The claim: deep-ocean heat has a "kinetic origin from below" because its
+  depth-μ (4413 m) is deeper than mean ocean depth (3688 m). The research is solid and the numbers are
+  *against* it, so it would have been easy to build:
+    - The exhibit's own conservative 25 ZJ below 2000 m converts to **exactly the 33 ± 20 TW** measured
+      by Desbruyères et al. 2016 — the study it cites — so the data is transcribed correctly.
+    - **That study attributes the warming to Antarctic Bottom Water spreading from the Southern Ocean**
+      (~67% of deep-sea heat absorption) and never mentions a seafloor source. AABW forms at the
+      surface, sinks, and spreads *laterally along the seafloor* — which is exactly why the depth-μ is
+      deep. The geometric argument fails on its own citation.
+    - Budget: 33 TW is ~70% of Earth's **entire** surface heat flow (47 ± 2 TW, Davies & Davies 2010),
+      which is steady background already in equilibrium. The full-column 209 ZJ is ~5.9× it.
+  **Declined anyway, and these are the reasons that matter more than the numbers:** it breaks the
+  locked cause-agnostic decision (a thermal claim has no kinematic consequence and the engine models no
+  heat); it would be the only layer that ignores the pole you set, i.e. a static text block wearing a
+  layer's clothes; the exhibit's headline is climate attribution ("not solar or manmade"), which drags
+  a geophysics app into a different and much worse fight; and building one rebuttal commits us to an
+  apparatus — Davidson's micronova, GEOSYNC's wobble and Hapgood's mechanism would each be owed one,
+  when the app's honesty architecture is deliberately **uniform grading** (one STANDING_INFO entry plus
+  one Model Caveats <li>) rather than per-exhibit litigation. Nothing in our ECDO caption currently
+  claims anything about abyssal heat, so there is also nothing to correct.
+  **The genuinely additive idea found next to it, still unbuilt: OCEAN DEPTH.** Water renders as binary
+  flooded/not-flooded against the reoriented sea level and never shows *how deep*; a shift reorganises
+  the depth distribution completely. Uses bathymetry we already ship, responds live to the pole like
+  every other layer, needs no new data. Judge it on its own merits — it is not this exhibit.
 
 ## 5. Obvious next moves
 1. The owed **iOS / real-device checks** in §2 — the largest unverified surface by far.
