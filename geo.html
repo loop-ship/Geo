@@ -51,7 +51,7 @@
    stays right for launch but a zero-fee, zero-friction tip jar is pure upside. Amber-accented footer link
    in press-kit/landing.html + a #tip-btn pill in geo.html's #friendly-bar, both firing the existing
    countEvent('tip-click', ...) helper. Gates nothing; free/no-signup/no-paywall framing unchanged. URL is
-   a placeholder (ko-fi.com/POLESHIFT_PLACEHOLDER) until the real account exists.
+   a placeholder at ship time; the real handle (ko-fi.com/loopship) was wired in 2026-08-04.
  - 2026-08-01: LOOP-BACK REVIEW PASS — an external UX audit (user-supplied screenshots) filtered against the
    live code + LOCKED DECISIONS before acting on any of it; full reasoning in research/HANDOFF.md and the
    session's plan file. Two of the audit's twelve recommendations were ALREADY SHIPPED (Simple-mode-default,
@@ -5328,13 +5328,12 @@ addEventListener('appinstalled', () => {
   countEvent('pwa-installed', 'PWA installed');
 });
 
-// Optional Ko-fi tip jar (2026-08-03). Purely optional — the app itself stays free/no-signup/no-paywall
-// regardless of whether anyone clicks this. TODO: ko-fi.com/POLESHIFT_PLACEHOLDER is a placeholder until
-// the real Ko-fi account exists; swap it (also occurs in press-kit/landing.html) before public deploy.
+// Optional Ko-fi tip jar (2026-08-03, handle wired in 2026-08-04: ko-fi.com/loopship). Purely optional —
+// the app itself stays free/no-signup/no-paywall regardless of whether anyone clicks this.
 const _tipBtn = document.getElementById('tip-btn');
 if (_tipBtn) _tipBtn.addEventListener('click', () => {
   countEvent('tip-click', 'Tip jar clicked');
-  window.open('https://ko-fi.com/POLESHIFT_PLACEHOLDER', '_blank', 'noopener');
+  window.open('https://ko-fi.com/loopship', '_blank', 'noopener');
 });
 
 // ============================================================
