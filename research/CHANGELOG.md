@@ -303,6 +303,17 @@ history behind that, not a substitute for it.
 
 ## Part 2 — Session changelog (chronological, most recent first)
 
+ LAST UPDATED: 2026-08-04 (LANDING PAGE MOVED OUT OF /press-kit/. First-launch social post review flagged
+   that the only casual-audience landing page lived at press-kit/landing.html — a URL that reads as
+   media-only to a general audience being asked to install the app. Moved it verbatim to the site root
+   (landing.html), fixed its three relative media srcs and the icon href to press-kit/screenshots/... (the
+   video/image assets themselves stayed put — still used by PRESS_KIT.md), and updated og:url to the new
+   location (og:image/twitter:image were already absolute URLs into press-kit/screenshots/, unaffected).
+   Left a thin meta-refresh redirect at the old press-kit/landing.html path (same pattern as index.html's
+   root redirect to geo.html) so any link already pointing there still resolves. press-kit/ now holds only
+   genuine press material (PRESS_KIT.md, raw clips, screenshots/). Prior: 2026-08-03b staged-reveal effect
+   bundle + trust/validation surfacing, below.)
+
  LAST UPDATED: 2026-08-03b (STAGED-REVEAL EFFECT BUNDLE + TRUST/VALIDATION SURFACING. Two separate inputs
    converged into one small pass: the product owner found "Show everything" visually overwhelming for
    casual play ("it takes over the screen" even though each layer is individually understandable), and an
