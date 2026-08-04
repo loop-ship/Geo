@@ -303,6 +303,78 @@ history behind that, not a substitute for it.
 
 ## Part 2 — Session changelog (chronological, most recent first)
 
+ LAST UPDATED: 2026-08-03b (STAGED-REVEAL EFFECT BUNDLE + TRUST/VALIDATION SURFACING. Two separate inputs
+   converged into one small pass: the product owner found "Show everything" visually overwhelming for
+   casual play ("it takes over the screen" even though each layer is individually understandable), and an
+   outside reviewer's landing-page feedback (evaluated the session before) turned out to be mostly already
+   shipped except two real gaps — no visible trust/methodology signal on the landing page, and no
+   validation examples anywhere. All four addressed as surgical additions to the existing architecture,
+   nothing rearchitected:
+
+   (1) STAGED REVEAL. Added EFFECT_BUNDLES.expanded — established + debated tiers (including monumentAlign,
+   which is tier 'contested'), but explicitly withholding _climate (the full-globe colour wash, judged the
+   single biggest "takes over the screen" element — the entire delta between the old essential/full bundles
+   besides every debated toggle was that one flag). New button "◆ Add the debated layers" sits between
+   "◆ Show the established set" and "◆ Show everything"; added to SIMPLE_FX_KEEP so Simple-mode/casual
+   players get the staged path, not just an all-or-nothing jump. "Show everything" is untouched — this is
+   additive, not a removal, for power users who want everything at once.
+
+   (2) DECLUTTER THE STATIC CHROME. #legend2 (17 rows) and the Advanced readout's EVENTS line (11 layer-tied
+   metrics) previously showed every possible row regardless of how many layers were actually on — itself a
+   clutter contributor once several layers are enabled. Each layer-tied element now carries
+   data-fx="key[,key2]" keyed to the same effectsParams/climateParams property names STANDING_INFO already
+   uses; a new updateLayerVisibility() helper (geo.html, immediately before computeEffects()) hides any
+   [data-fx] element whose key(s) are all off, called at the end of computeEffects() and from the standalone
+   Climate Zones toggle (which didn't previously call computeEffects()). Driver-layer/always-relevant fields
+   (Δσ threshold, BODY ΔCFS, FLUX P, FAULT GATE) stay unwrapped and always visible.
+
+   (3) FLOOD MECHANIC GETS ITS OWN BADGE. STANDING_INFO.showWater added (tier: established) — the water
+   mechanic itself (sea level re-settling toward the rotational-bulge equipotential) is settled geodesy,
+   worded to clearly distinguish it from bulgeRigidity's existing tier:'speculative' grading, which covers
+   only the separate rigidity/speed assumption, not the mechanism. seaLevel (manual global offset) stays
+   unbadged, consistent with other manual-override controls. The disclosure foot paragraph (the one place
+   the water mechanic's overall standing is discussed, per the existing "single grading, two surfaces" rule)
+   was expanded to state plainly that the water math is derived straight from WGS84 physical constants
+   (a−b≈21.38km), not fit or calibrated to any historical flood — framed as a strength, not a hedge.
+
+   (4) LANDING-PAGE METHODOLOGY DEEP LINK. A bare #disclosure anchor would NOT have worked — the existing
+   share-view system parses the entire URL hash as scenario query params (lat=, lon=, etc.), so a plain
+   fragment would be silently swallowed. Instead: a `?caveats=1` query-string check at load (independent of
+   the hash parser — query string and fragment never collide) calls the existing toggleDisclosure() to
+   auto-open Model Caveats on arrival. press-kit/landing.html gained one link next to the existing
+   established/debated/unverified chip row: "See exactly how every layer is graded, with named sources →",
+   pointing at the app root with ?caveats=1, reusing the existing .sub-cta style (no new CSS).
+
+   (5) SURFACE THE TWO REAL VALIDATION ANCHORS THAT ALREADY EXISTED. GIA rebound's τ≈450yr relaxation
+   timescale and the Pärvie-fault citation, and climate belts' Jurassic ~30° pole-shift citation, were
+   already in the Model Caveats text but never framed as "this was checked against a real event" — both
+   li's reworded to make that framing explicit (Pärvie: "the same real-Earth mantle-viscosity estimate...,
+   not a number invented for this sim"; climate: "the nearest real-world check is the Jurassic ~30° true
+   polar wander event... exactly as this reclassification logic predicts"). The core water-redistribution
+   math (Stage 3) is deliberately NOT given a fake validation anchor — it's physics-derived from WGS84
+   constants, not event-calibrated, and the foot-paragraph rewrite in (3) states that honestly instead.
+
+   Verified locally (scratch port 8010, never Stormcrow-weather/localhost:8000): clicked all four bundles
+   and confirmed expanded holds out climate while full includes it; confirmed legend/readout rows
+   appear/disappear correctly per active layer; confirmed the showWater badge (✓ established, relabelled by
+   Plain Language to "Let oceans redistribute") renders distinctly from bulgeRigidity's (? speculative,
+   "Stiffness of the equatorial bulge"); confirmed ?caveats=1 opens Model Caveats with no console errors and
+   the landing-page link resolves to the correct URL. Prior: 2026-08-03 optional Ko-fi tip jar, below.)
+
+ LAST UPDATED: 2026-08-03 (OPTIONAL KO-FI TIP JAR. User research session concluded free stays the right
+   model for launch (zero marginal cost, curiosity-toy usage pattern, a paywall would hurt Show HN/Reddit
+   virality) but a zero-friction, zero-fee optional tip jar is pure upside. Added: an amber-accented footer
+   link in press-kit/landing.html ("Buy me a coffee ☕", coloured off the primary cyan CTA so it doesn't
+   compete) and a #tip-btn pill in geo.html's #friendly-bar (title tooltip: "This is free forever — tips
+   are optional"), both pointing at Ko-fi (0% platform fee on one-time tips, no account needed to send
+   one). Click fires the existing countEvent('tip-click', 'Tip jar clicked') analytics helper, gated by
+   the same analyticsEnabled() as everything else — no new tracking infrastructure. Also added one line to
+   press-kit/PRESS_KIT.md's "Free framing" section noting the tip jar exists and isn't part of the pitch,
+   so future press/copy drafts stay consistent with "free" leading. URL IS A PLACEHOLDER
+   (ko-fi.com/POLESHIFT_PLACEHOLDER) in both geo.html and landing.html — the account doesn't exist yet;
+   grep for POLESHIFT_PLACEHOLDER and swap both occurrences for the real handle before public deploy.
+   Prior: 2026-08-01 loop-back review pass, below.)
+
  LAST UPDATED: 2026-07-31c (THEORY/ATTRIBUTION AUDIT + ANALYTICS HOOK. Research and sources in
    research/RESEARCH_7_theory_audit.md; this is what shipped from it.
 

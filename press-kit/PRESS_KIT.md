@@ -77,6 +77,10 @@ open the link, drag a globe, see a flood happen in under ten seconds. No signup 
 visitor and the "aha" moment is the actual product decision, and it should be the actual marketing
 decision too.
 
+There's a low-key optional Ko-fi tip jar (footer link on the landing page, a small pill inside the app) —
+it doesn't gate anything and isn't part of the pitch. Keep it out of headlines/launch copy; "free" stays
+the lead.
+
 ---
 
 ## Launch copy by channel

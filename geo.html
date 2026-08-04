@@ -34,6 +34,24 @@
    atmosphere + magnetosphere field lines, photoreal Earth, driver<->cinematic integration.
  - Friendly-mode UX pass U1–U2: Simple/Advanced switch, plain-language control labels, "what am I
    looking at?" explainer.
+ - 2026-08-03b: STAGED-REVEAL BUNDLE + TRUST/VALIDATION SURFACING. Product owner found "Show everything"
+   overwhelming for casual play; an outside reviewer separately flagged the landing page's unqualified
+   "real physics model" language. Both addressed as small additive changes (full detail in
+   research/CHANGELOG.md): (1) new EFFECT_BUNDLES.expanded (established+debated, holds out the climate-belt
+   colour wash) + "◆ Add the debated layers" button between essential and full, in SIMPLE_FX_KEEP so Simple
+   mode gets the staged path too; (2) #legend2 rows and the EVENTS readout now carry data-fx="key" and hide
+   via updateLayerVisibility() when their layer is off — declutters proportional to what's actually enabled;
+   (3) STANDING_INFO.showWater added (established) so the headline flood mechanic is graded, distinct from
+   bulgeRigidity's existing speculative rigidity-assumption grading; disclosure foot paragraph expanded to
+   state the water math is derived from WGS84 constants, not calibrated to a historical flood; (4) ?caveats=1
+   query param auto-opens Model Caveats on load (collision-free with the hash-based share-view parser) +
+   a landing-page link to it; (5) GIA (Pärvie fault) and climate (Jurassic pole-shift) citations reframed as
+   real-world validation checks, not just background sourcing.
+ - 2026-08-03: OPTIONAL KO-FI TIP JAR. Market/pricing research (see research/CHANGELOG.md) concluded free
+   stays right for launch but a zero-fee, zero-friction tip jar is pure upside. Amber-accented footer link
+   in press-kit/landing.html + a #tip-btn pill in geo.html's #friendly-bar, both firing the existing
+   countEvent('tip-click', ...) helper. Gates nothing; free/no-signup/no-paywall framing unchanged. URL is
+   a placeholder (ko-fi.com/POLESHIFT_PLACEHOLDER) until the real account exists.
  - 2026-08-01: LOOP-BACK REVIEW PASS — an external UX audit (user-supplied screenshots) filtered against the
    live code + LOCKED DECISIONS before acting on any of it; full reasoning in research/HANDOFF.md and the
    session's plan file. Two of the audit's twelve recommendations were ALREADY SHIPPED (Simple-mode-default,
@@ -706,7 +724,10 @@
    this ordering so seismicity still bumps before the shift. The narrative is honest: driver visibly falls short,
    the shift is the premise.
  ------------------------------------------------------------
- LAST UPDATED: 2026-07-31 (E22 monument alignment layer shipped — the last mid-flight feature; before that:
+ LAST UPDATED: 2026-08-03b (staged-reveal effect bundle + trust/validation surfacing — see BUILD STATUS
+   above; before that: 2026-08-03 optional Ko-fi tip jar — footer link + in-app pill, gates nothing;
+   before that: 2026-08-01 loop-back review pass (share CTA, bulge-rigidity hero card, plain-language
+   disclaimers); before that: E22 monument alignment layer shipped — the last mid-flight feature; before that:
    responsive opening frame, first-impression defaults + hint chip, drag-to-pole retune, shareable view links;
    before that: published to GitHub Pages + responsive settings drawer + Simple-mode default;
    before that: E18–E21 browser QA, code-condense/drag-to-pole, and a perf pass. See the newest BUILD STATUS
@@ -1083,6 +1104,9 @@
   }
   #friendly-bar button:hover { color: var(--cyan); border-color: var(--cyan); }
   #friendly-bar #plain-toggle.on { color: #05080d; background: var(--cyan); font-weight: 600; }
+  /* Tip jar reads as optional generosity, not a core control — amber (the badge/accent colour), never cyan. */
+  #friendly-bar #tip-btn { color: var(--amber); border-color: rgba(232,163,61,0.35); }
+  #friendly-bar #tip-btn:hover { color: var(--amber); border-color: var(--amber); }
   body.ui-hidden #friendly-bar { display: none !important; }
   #explainer {
     display: none;
@@ -1250,6 +1274,7 @@
   <!-- PWA install: hidden by default; only revealed if the browser fires beforeinstallprompt
        (i.e. actually installable and not already installed), and removed again once installed. -->
   <button id="install-btn" title="Install as an app" style="display:none">⬇ Install</button>
+  <button id="tip-btn" title="This is free forever — tips are optional">☕ Tip jar</button>
 </div>
 
 <div id="explainer">
@@ -1297,7 +1322,7 @@
   <div>SPIN AXIS &nbsp;<b>fixed in world space</b> &nbsp;|&nbsp; BULGE &nbsp;<b id="r-bulge">rigid</b></div>
   <div>RENDERER &nbsp;<b id="r-renderer">WebGL2</b> &nbsp;|&nbsp; FPS &nbsp;<b id="r-fps">–</b></div>
   <div>NEW POLE &nbsp;<b id="r-pole">90°, 0°</b> &nbsp;|&nbsp; CRUST SHIFT &nbsp;<b id="r-shift">0.0°</b></div>
-  <div>EVENTS &nbsp; QUAKES <b id="r-quakes">0</b> &nbsp;|&nbsp; VOLCANOES <b id="r-volc">0</b> &nbsp;|&nbsp; TRIGGERED <b id="r-trig">0</b> &nbsp;|&nbsp; SYNCH <b id="r-lod">0</b> &nbsp;|&nbsp; ERUPT <b id="r-deglac">—</b> &nbsp;|&nbsp; GIA <b id="r-gia">0</b> &nbsp;|&nbsp; SOLAR <b id="r-solar">0</b> &nbsp;|&nbsp; CASCADE <b id="r-casc">0</b> &nbsp;|&nbsp; TSUNAMI <b id="r-tsu">0</b> &nbsp;|&nbsp; FAULT N/T/S <b id="r-style">—</b> &nbsp;|&nbsp; MONU (Giza) <b id="r-monu">—</b> &nbsp;|&nbsp; Δσ THRESH <b>0.01 MPa</b> <span class="hud-note">(not a quake magnitude)</span> &nbsp;|&nbsp; BODY ΔCFS <b id="r-body">—</b> &nbsp;|&nbsp; FLUX P <b id="r-flux">—</b> &nbsp;|&nbsp; FAULT GATE <b id="r-fault">no data — run make_plate_boundaries.py</b></div>
+  <div>EVENTS<span data-fx="showEarthquakes"> &nbsp;|&nbsp; QUAKES <b id="r-quakes">0</b></span><span data-fx="showVolcanoes"> &nbsp;|&nbsp; VOLCANOES <b id="r-volc">0</b></span><span data-fx="dynamicTrigger,antipodalBonus"> &nbsp;|&nbsp; TRIGGERED <b id="r-trig">0</b></span><span data-fx="lodModulation"> &nbsp;|&nbsp; SYNCH <b id="r-lod">0</b></span><span data-fx="deglaciationMult"> &nbsp;|&nbsp; ERUPT <b id="r-deglac">—</b></span><span data-fx="giaRebound"> &nbsp;|&nbsp; GIA <b id="r-gia">0</b></span><span data-fx="solarCoupling"> &nbsp;|&nbsp; SOLAR <b id="r-solar">0</b></span><span data-fx="eqVolcCascade"> &nbsp;|&nbsp; CASCADE <b id="r-casc">0</b></span><span data-fx="flankCollapse"> &nbsp;|&nbsp; TSUNAMI <b id="r-tsu">0</b></span><span data-fx="faultStyle"> &nbsp;|&nbsp; FAULT N/T/S <b id="r-style">—</b></span><span data-fx="monumentAlign"> &nbsp;|&nbsp; MONU (Giza) <b id="r-monu">—</b></span> &nbsp;|&nbsp; Δσ THRESH <b>0.01 MPa</b> <span class="hud-note">(not a quake magnitude)</span> &nbsp;|&nbsp; BODY ΔCFS <b id="r-body">—</b> &nbsp;|&nbsp; FLUX P <b id="r-flux">—</b> &nbsp;|&nbsp; FAULT GATE <b id="r-fault">no data — run make_plate_boundaries.py</b></div>
   </div><!-- /readout-adv -->
   <div id="monu-panel"></div><!-- E22: filled by renderMonumentAlignments(); outside .readout-adv on purpose -->
   <div id="legend-head" class="legend-toggle">▾ MAP KEY</div>
@@ -1309,25 +1334,25 @@
     <span><i style="display:inline-block;width:9px;height:9px;background:#1d6f8c;margin-right:5px;border-radius:1px;"></i>ocean</span>
   </div>
   <div id="legend2" style="margin-top:5px; display:flex; gap:14px; flex-wrap:wrap; text-transform:none; letter-spacing:0.04em;">
-    <span><i style="display:inline-block;width:9px;height:9px;background:#ff2d2d;margin-right:5px;border-radius:50%;"></i>earthquake (|Δσ|)</span>
-    <span><i style="display:inline-block;width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-bottom:9px solid #ff7a2d;margin-right:5px;"></i>volcano (unloading)</span>
-    <span><i style="display:inline-block;width:9px;height:9px;background:#ff3d6e;margin-right:5px;border-radius:1px;"></i>Δσ load</span>
-    <span><i style="display:inline-block;width:9px;height:9px;background:#ffb43d;margin-right:5px;border-radius:1px;"></i>Δσ unload</span>
-    <span><i style="display:inline-block;width:9px;height:9px;background:#b14cff;margin-right:5px;border-radius:1px;"></i>dynamic / antipodal trigger (E9)</span>
-    <span><i style="display:inline-block;width:9px;height:9px;border:2px solid #4fd2ff;border-radius:50%;margin-right:5px;"></i>LOD synch (E10)</span>
-    <span><i style="display:inline-block;width:9px;height:9px;background:#ffe680;margin-right:5px;border-radius:50%;"></i>deglaciation ×rate (E11)</span>
-    <span><i style="display:inline-block;width:9px;height:9px;background:#6ea8ff;margin-right:5px;border-radius:1px;"></i>GIA rebound (E12)</span>
-    <span><i style="display:inline-block;width:9px;height:9px;background:#5af08c;margin-right:5px;border-radius:1px;"></i>solar coupling (E13)</span>
-    <span><i style="display:inline-block;width:9px;height:9px;background:#ff5bd0;margin-right:5px;border-radius:50%;"></i>EQ→volcano (E14)</span>
-    <span><i style="display:inline-block;width:11px;height:11px;border:2px solid #bff0ff;border-radius:50%;margin-right:5px;"></i>flank-collapse tsunami (E16)</span>
-    <span><i style="display:inline-block;width:13px;height:3px;background:#f2e6c8;margin-right:5px;vertical-align:middle;"></i>monument axis, cardinal-aimed (E22)</span>
-    <span><i style="display:inline-block;width:13px;height:3px;background:#8b929c;margin-right:5px;vertical-align:middle;"></i>monument axis, not a pole indicator</span>
-    <span><i style="display:inline-block;width:13px;height:3px;background:#ffffff;margin-right:5px;vertical-align:middle;"></i>bearing to the set pole</span>
-    <span>fault style (E15):
+    <span data-fx="showEarthquakes"><i style="display:inline-block;width:9px;height:9px;background:#ff2d2d;margin-right:5px;border-radius:50%;"></i>earthquake (|Δσ|)</span>
+    <span data-fx="showVolcanoes"><i style="display:inline-block;width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-bottom:9px solid #ff7a2d;margin-right:5px;"></i>volcano (unloading)</span>
+    <span data-fx="showStressOverlay"><i style="display:inline-block;width:9px;height:9px;background:#ff3d6e;margin-right:5px;border-radius:1px;"></i>Δσ load</span>
+    <span data-fx="showStressOverlay"><i style="display:inline-block;width:9px;height:9px;background:#ffb43d;margin-right:5px;border-radius:1px;"></i>Δσ unload</span>
+    <span data-fx="dynamicTrigger,antipodalBonus"><i style="display:inline-block;width:9px;height:9px;background:#b14cff;margin-right:5px;border-radius:1px;"></i>dynamic / antipodal trigger (E9)</span>
+    <span data-fx="lodModulation"><i style="display:inline-block;width:9px;height:9px;border:2px solid #4fd2ff;border-radius:50%;margin-right:5px;"></i>LOD synch (E10)</span>
+    <span data-fx="deglaciationMult"><i style="display:inline-block;width:9px;height:9px;background:#ffe680;margin-right:5px;border-radius:50%;"></i>deglaciation ×rate (E11)</span>
+    <span data-fx="giaRebound"><i style="display:inline-block;width:9px;height:9px;background:#6ea8ff;margin-right:5px;border-radius:1px;"></i>GIA rebound (E12)</span>
+    <span data-fx="solarCoupling"><i style="display:inline-block;width:9px;height:9px;background:#5af08c;margin-right:5px;border-radius:1px;"></i>solar coupling (E13)</span>
+    <span data-fx="eqVolcCascade"><i style="display:inline-block;width:9px;height:9px;background:#ff5bd0;margin-right:5px;border-radius:50%;"></i>EQ→volcano (E14)</span>
+    <span data-fx="flankCollapse"><i style="display:inline-block;width:11px;height:11px;border:2px solid #bff0ff;border-radius:50%;margin-right:5px;"></i>flank-collapse tsunami (E16)</span>
+    <span data-fx="monumentAlign"><i style="display:inline-block;width:13px;height:3px;background:#f2e6c8;margin-right:5px;vertical-align:middle;"></i>monument axis, cardinal-aimed (E22)</span>
+    <span data-fx="monumentAlign"><i style="display:inline-block;width:13px;height:3px;background:#8b929c;margin-right:5px;vertical-align:middle;"></i>monument axis, not a pole indicator</span>
+    <span data-fx="monumentAlign"><i style="display:inline-block;width:13px;height:3px;background:#ffffff;margin-right:5px;vertical-align:middle;"></i>bearing to the set pole</span>
+    <span data-fx="faultStyle">fault style (E15):
       <i style="display:inline-block;width:9px;height:9px;background:#2f7bff;margin:0 2px 0 4px;border-radius:1px;"></i>normal
       <i style="display:inline-block;width:9px;height:9px;background:#ff2d55;margin:0 2px 0 6px;border-radius:1px;"></i>thrust
       <i style="display:inline-block;width:9px;height:9px;background:#ffc400;margin:0 2px 0 6px;border-radius:1px;"></i>strike-slip</span>
-    <span>climate (E17):
+    <span data-fx="showClimate">climate (E17):
       <i style="display:inline-block;width:9px;height:9px;background:#ff8c42;margin:0 2px 0 4px;border-radius:1px;"></i>tropical
       <i style="display:inline-block;width:9px;height:9px;background:#7ec850;margin:0 2px 0 6px;border-radius:1px;"></i>temperate
       <i style="display:inline-block;width:9px;height:9px;background:#9fd8ff;margin:0 2px 0 6px;border-radius:1px;"></i>polar</span>
@@ -1413,7 +1438,8 @@
       glaciation-accumulated horizontal stress is released as large <i>thrust</i> (postglacial) faulting — the
       Fennoscandian glacially-induced faults, e.g. the 155 km Pärvie fault with a paleo-earthquake of Mw ~7.9
       (Wood 1989), single events to Mw ~8.2 (Arvidsson 1996). Rebound is viscoelastic (τ=η/μ ≈ 450 yr for
-      η≈10²¹ Pa·s), so here it is tied to the bulge-relaxation state: the blue cubes are ZERO while the bulge is
+      η≈10²¹ Pa·s — the same real-Earth mantle-viscosity estimate behind the Pärvie sequence above, not a
+      number invented for this sim), so here it is tied to the bulge-relaxation state: the blue cubes are ZERO while the bulge is
       rigid and grow as you <b>Relax Bulge → 0</b> (the mirror image of the instant-flood markers, which fade as
       rigidity→0). Faulting is placed at unloaded sites where the rebound ΔCFS exceeds the threshold (~0.01 MPa).
       The Mw 7.9-vs-8.2 figures themselves conflict in the literature — read the cubes as illustrative great-
@@ -1459,8 +1485,9 @@
       forecast.</li>
     <li><b>Climate zones (E17) are established for insolation, instantaneous by design.</b> A pole shift moves
       every point to a new latitude relative to the fixed spin axis, so its annual insolation — and therefore
-      its climate belt — changes (Daradich 2017); the Jurassic ~30° shift moved whole regions across climate
-      belts (Muttoni &amp; Kent 2019). The overlay recomputes each cell's belt from its new world latitude using
+      its climate belt — changes (Daradich 2017); the nearest real-world check is the Jurassic ~30° true
+      polar wander event, which moved whole regions across climate belts exactly as this reclassification
+      logic predicts (Muttoni &amp; Kent 2019). The overlay recomputes each cell's belt from its new world latitude using
       the standard boundaries (tropical |lat| &lt; 23.5°, temperate &lt; 66.5°, polar beyond), and can instead
       highlight only the crust that <i>crossed</i> a belt. Two honest limits: the insolation/zone change is
       effectively instant, but the <i>ocean and ice-sheet response lags centuries to millennia</i> (not modelled
@@ -1514,10 +1541,13 @@
       the published azimuth behind it. The bearing is a standard great-circle forward azimuth, and monument
       axes are <i>lines</i>, not rays, so the residual folds to 0–90°.</li>
   </ol>
-  <p class="foot">And the genre-level caveat that governs everything above: the catastrophic water
-    redistribution itself depends on the equatorial bulge <i>not</i> relaxing during the shift. Set
-    <b>Bulge Rigidity → 0</b> and the flood — and every marker — vanishes. This is a scenario explorer, not a
-    forecast.</p>
+  <p class="foot"><b>The water mechanic itself is established geodesy:</b> once the pole moves, sea level
+    re-settles toward the new gravitational equipotential set by Earth's rotational bulge (WGS84 a−b ≈
+    21.38 km) — that part isn't in dispute, and it's derived straight from those physical constants, not fit
+    or calibrated to any historical flood. What's speculative is the genre-level caveat that governs
+    everything above: whether that resettlement happens at flood speed. Set <b>Bulge Rigidity → 0</b> and the
+    flood — and every marker — vanishes; the real bulge relaxes over ~10³–10⁴ yr, not the instant this sim
+    depicts by default. This is a scenario explorer, not a forecast.</p>
 </div>
 
 <script type="importmap">
@@ -3105,6 +3135,19 @@ const _tsuNb = new THREE.Vector3();  // E16: neighbour world dir
 const _tsuLk = new THREE.Vector3();  // E16: neighbour crust (lookup) dir
 const _tsuAX = new THREE.Vector3(1, 0, 0);  // fallback tangent axis near the poles
 
+// PROGRESSIVE-REVEAL DECLUTTER (companion to the staged-reveal bundles above): #legend2 rows and the
+// EVENTS readout line list every possible layer regardless of how many are actually on. Each relevant
+// element carries data-fx="key[,key2]" (OR'd, comma-separated) keyed to the SAME effectsParams/
+// climateParams property names STANDING_INFO and SHARE_LAYER_KEYS already use — hide the row when none
+// of its keys are active. Driver-layer (body/storm) and always-relevant metrics (Δσ threshold, fault-
+// gate status) intentionally carry no data-fx and always stay visible.
+function isFxKeyActive(k) { return k === 'showClimate' ? !!climateParams.showClimate : !!effectsParams[k]; }
+function updateLayerVisibility() {
+  document.querySelectorAll('[data-fx]').forEach(el => {
+    el.style.display = el.dataset.fx.split(',').some(isFxKeyActive) ? '' : 'none';
+  });
+}
+
 function computeEffects() {
   const N = Math.max(200, Math.round(effectsParams.siteDensity));
   const Rinv = uniforms.uRinv.value;                 // Matrix3 = inverse(R)
@@ -3511,6 +3554,7 @@ function computeEffects() {
   const ste = document.getElementById('r-style');  if (ste) ste.textContent = effectsParams.faultStyle
     ? (nNorm.toLocaleString() + ' / ' + nThrust.toLocaleString() + ' / ' + nSlip.toLocaleString()) : '—';
   renderMonumentAlignments();   // E22 — independent of the site loop above; hoisted declaration
+  updateLayerVisibility();
 }
 
 // ---- E22: MONUMENT ALIGNMENTS (see the E22 block above for the reasoning; header for the landmines) ----
@@ -3717,11 +3761,16 @@ function toggleDisclosure() {
 // ---- Stage 5: effects controls ----
 const fxFolder = gui.addFolder('Consequences');
 // FRIENDLY-MODE (UX): one-tap effect BUNDLES at the top of the dropdown. They set the whole group; the
-// individual toggles below still work. Essential = the established core; Full chain = everything (incl.
-// contested/speculative, minus the unsupported deep-preference); None = clear. (Comprehension pass.)
+// individual toggles below still work. Essential = the established core; Expanded = established + debated
+// (every marker layer, INCLUDING monument alignments, but withholds the full-globe climate-belt colour
+// wash — the single biggest "takes over the screen" element); Full chain = everything (adds climate belts;
+// still excludes the unsupported deep-preference); None = clear. (Comprehension pass; staged-reveal
+// addendum 2026-08-03 — product owner found jumping straight to "everything" overwhelming for casual play.)
 const EFFECT_BUNDLES = {
   essential: { showEarthquakes:true, showVolcanoes:true, dynamicTrigger:true, deglaciationMult:true, giaRebound:true, eqVolcCascade:true, faultStyle:true, flankCollapse:true,
                antipodalBonus:false, lodModulation:false, solarCoupling:false, deepPreference:false, monumentAlign:false, _climate:false },
+  expanded:  { showEarthquakes:true, showVolcanoes:true, dynamicTrigger:true, deglaciationMult:true, giaRebound:true, eqVolcCascade:true, faultStyle:true, flankCollapse:true,
+               antipodalBonus:true, lodModulation:true, solarCoupling:true, deepPreference:false, monumentAlign:true, _climate:false },
   full:      { showEarthquakes:true, showVolcanoes:true, dynamicTrigger:true, deglaciationMult:true, giaRebound:true, eqVolcCascade:true, faultStyle:true, flankCollapse:true,
                antipodalBonus:true, lodModulation:true, solarCoupling:true, deepPreference:false, monumentAlign:true, _climate:true },
   none:      { showEarthquakes:false, showVolcanoes:false, dynamicTrigger:false, deglaciationMult:false, giaRebound:false, eqVolcCascade:false, faultStyle:false, flankCollapse:false,
@@ -3735,6 +3784,7 @@ function setEffectBundle(name) {
   computeEffects();
 }
 fxFolder.add({ go: () => setEffectBundle('essential') }, 'go').name('◆ Show the established set');
+fxFolder.add({ go: () => setEffectBundle('expanded') }, 'go').name('◆ Add the debated layers');
 fxFolder.add({ go: () => setEffectBundle('full') }, 'go').name('◆ Show everything');
 fxFolder.add({ go: () => setEffectBundle('none') }, 'go').name('◇ Clear all');
 // DETAIL (2026-07-30): one friendly knob for "how many markers", instead of making a newcomer find
@@ -3800,7 +3850,7 @@ fxFolder.open();
 // insolation map; ocean/ice response lags centuries-millennia (see Model Caveats). Off by default.
 const climateParams = { showClimate: false, changeMode: false };
 const climateFolder = gui.addFolder('Climate belts');
-climateFolder.add(climateParams, 'showClimate').name('Climate Zones').onChange(v => { uniforms.uShowClimate.value = v ? 1.0 : 0.0; });
+climateFolder.add(climateParams, 'showClimate').name('Climate Zones').onChange(v => { uniforms.uShowClimate.value = v ? 1.0 : 0.0; updateLayerVisibility(); });
 climateFolder.add(climateParams, 'changeMode').name('Show Belt Crossings').onChange(v => { uniforms.uClimateMode.value = v ? 1.0 : 0.0; });
 
 // ============================================================
@@ -4604,6 +4654,7 @@ viewFolder.open();
 // ============================================================
 const STANDING_INFO = {   // GUI property name -> { tier, what (one line), src }
   showEarthquakes:  { tier: 'established', what: 'Coulomb stress-change triggering above a ~0.01 MPa threshold', src: 'King, Stein & Lin 1994' },
+  showWater:        { tier: 'established', what: "the water mechanic itself — sea level re-settling toward Earth's rotational-bulge equipotential once the pole moves (distinct from the RIGIDITY assumption below, which grades how much of that resettlement happens at flood speed)", src: 'WGS84 geodesy (a−b≈21.38km); see Model Caveats foot' },
   bulgeRigidity:    { tier: 'speculative', what: 'the catastrophic-flood premise — a rotational bulge that stays RIGID on the shift timescale (it really relaxes over ~10³–10⁴ yr)', src: 'load-bearing assumption; see Model Caveats foot' },
   dynamicTrigger:   { tier: 'established', what: 'remote dynamic triggering — a great quake bumps seismicity worldwide, decaying with distance', src: 'Hill 1993; Velasco 2008' },
   antipodalBonus:   { tier: 'contested',   what: 'extra triggering focused near the antipode (secondary ~45°, minimum ~90°)', src: "O'Malley 2018 vs Parsons & Velasco 2011" },
@@ -5186,7 +5237,7 @@ function setUIMode(simple) {
   gui.controllers.forEach(c => {
     if (c && c.domElement) c.domElement.classList.toggle('adv-only', /Show Bulge|Show Spin Axis/.test(c._name || ''));
   });
-  const SIMPLE_FX_KEEP = /Show the established set|Show everything|Clear all|Detail \(marker density\)|Model Caveats|Honest limitations|Monument Alignments|monuments point/;
+  const SIMPLE_FX_KEEP = /Show the established set|Add the debated layers|Show everything|Clear all|Detail \(marker density\)|Model Caveats|Honest limitations|Monument Alignments|monuments point/;
   fxFolder.controllers.forEach(c => {
     if (c && c.domElement) c.domElement.classList.toggle('adv-only', !SIMPLE_FX_KEEP.test(c._name || ''));
   });
@@ -5234,6 +5285,14 @@ updateReplayButton();   // no shift at load, so this just settles the button hid
 let _fromSharedLink = false;
 try { _fromSharedLink = applySharedView(location.hash); } catch (e) { /* malformed link: fall back to a normal load */ }
 if (_fromSharedLink) _seenIntro = true;
+// Landing-page deep link: ?caveats=1 auto-opens Model Caveats. Independent of the hash-based share-view
+// parser above — query string vs fragment, they never collide. Treated like a shared link for onboarding
+// purposes so the two panels never stack.
+let _fromCaveatsLink = false;
+try {
+  if (new URLSearchParams(location.search).get('caveats') === '1') { toggleDisclosure(); _fromCaveatsLink = true; }
+} catch (e) {}
+if (_fromCaveatsLink) _seenIntro = true;
 if (!_seenIntro) {
   document.getElementById('explainer').style.display = 'block';
   try { localStorage.setItem('geo_seen_intro', '1'); } catch (e) {}
@@ -5267,6 +5326,15 @@ if (_installBtn) _installBtn.addEventListener('click', async () => {
 addEventListener('appinstalled', () => {
   _installPrompt = null; if (_installBtn) _installBtn.style.display = 'none';
   countEvent('pwa-installed', 'PWA installed');
+});
+
+// Optional Ko-fi tip jar (2026-08-03). Purely optional — the app itself stays free/no-signup/no-paywall
+// regardless of whether anyone clicks this. TODO: ko-fi.com/POLESHIFT_PLACEHOLDER is a placeholder until
+// the real Ko-fi account exists; swap it (also occurs in press-kit/landing.html) before public deploy.
+const _tipBtn = document.getElementById('tip-btn');
+if (_tipBtn) _tipBtn.addEventListener('click', () => {
+  countEvent('tip-click', 'Tip jar clicked');
+  window.open('https://ko-fi.com/POLESHIFT_PLACEHOLDER', '_blank', 'noopener');
 });
 
 // ============================================================
