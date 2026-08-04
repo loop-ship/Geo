@@ -5,6 +5,16 @@
 build/
 archive/
 
+# Raw/working press-kit footage (source material, not deployable assets). GitHub hard-blocks any single
+# file over 100MB, and press-kit/0801.mov alone is ~200MB — never let a broad `git add` catch these.
+# The actual embeddable clips are press-kit/screenshots/*.mp4 (compressed, committed, referenced by
+# landing.html/geo.html) — those are NOT covered by this rule.
+press-kit/*.mov
+press-kit/*.mp4
+press-kit/_analysis/
+press-kit/_clips/
+!press-kit/screenshots/*.mp4
+
 # The app only ever loads geo.html + these 5 siblings at runtime; everything committed should be
 # the deployable static site (geo.html, index.html, the 5 assets, research/ docs, README).
 
