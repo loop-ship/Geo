@@ -16,7 +16,11 @@ press-kit/_clips/
 !press-kit/screenshots/*.mp4
 
 # The app only ever loads geo.html + these 5 siblings at runtime; everything committed should be
-# the deployable static site (geo.html, index.html, the 5 assets, research/ docs, README).
+# the deployable static site (geo.html, index.html, the 5 assets, README).
+
+# Internal dev/engineering notes (session logs, handoff docs, research write-ups). Kept locally
+# for project continuity but not part of the public product — never published to the repo/Pages.
+research/
 
 # --- OS / editor cruft ---
 Thumbs.db
