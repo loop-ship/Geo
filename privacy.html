@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<!--
+  Privacy policy for the website and the iOS / Android apps. Both stores require a public URL for this
+  (App Store Connect → App Privacy, Play Console → App content → Privacy policy), and geo.html's
+  "Privacy" button links here. Keep it true: if analytics or data handling changes in geo.html, change
+  this page, the App Store privacy label and the Play Data safety form in the same commit
+  (see store/STORE_LISTING.md).
+-->
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Privacy Policy — Pole-Shift Simulator</title>
+<meta name="description" content="Privacy policy for the Pole-Shift Simulator website and its iOS and Android apps." />
+<link rel="icon" href="icon-192.png" />
+<style>
+  :root { --bg: #05080d; --edge: rgba(86, 196, 222, 0.22); --cyan: #56c4de; --amber: #e8a33d; --ink: #cfe3ea; --ink-dim: #6f8893; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--bg); color: var(--ink); }
+  body { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; line-height: 1.65; }
+  a { color: var(--cyan); }
+  main { max-width: 760px; margin: 0 auto; padding: 56px 20px 80px; }
+  h1 { color: #fff; font-size: clamp(24px, 4vw, 32px); margin: 0 0 6px; }
+  h2 { color: #eaf4f8; font-size: 16px; letter-spacing: 0.06em; text-transform: uppercase; margin: 36px 0 8px;
+       border-left: 2px solid var(--cyan); padding-left: 10px; }
+  .dim { color: var(--ink-dim); font-size: 13px; }
+  .summary { border: 1px solid var(--edge); border-radius: 6px; padding: 14px 18px; margin-top: 24px; }
+  .summary b { color: var(--amber); }
+  ul { padding-left: 20px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Privacy Policy</h1>
+  <p class="dim">Pole-Shift Simulator — website (poleshift.app) and the iOS and Android apps. Last updated 20 October 2026.</p>
+
+  <div class="summary">
+    <p><b>Short version:</b> the apps collect no data at all. There are no accounts, no ads, no tracking,
+    and nothing you do in the app is sent anywhere. The website counts anonymous page views without cookies.</p>
+  </div>
+
+  <h2>The iOS and Android apps</h2>
+  <ul>
+    <li>The simulator runs entirely on your device. The globe, terrain and physics are bundled inside the app,
+      and it works without an internet connection.</li>
+    <li>The apps contain no analytics, advertising, crash-reporting or tracking software, and make no network
+      requests of their own.</li>
+    <li>The app stores a few display preferences on your device only (for example, whether you have already
+      seen the introduction panel). These never leave the device and are removed when you uninstall the app.</li>
+    <li>If you use <b>Share</b>, the app hands a link describing your current view (pole position and settings —
+      nothing personal) to your device's own share sheet. Where it goes next is up to you.</li>
+    <li>Tapping a link to this page or another website opens it in your browser, which has its own privacy terms.</li>
+  </ul>
+
+  <h2>The website</h2>
+  <ul>
+    <li>The website uses <a href="https://www.goatcounter.com/">GoatCounter</a> to count page views and a few
+      anonymous events (such as "app installed"). GoatCounter sets no cookies and does not build profiles or
+      track you across sites. It is skipped entirely if your browser sends Do Not Track.</li>
+    <li>Like any website, the hosting provider (GitHub Pages) receives standard request information such as
+      your IP address in order to deliver the page. See
+      <a href="https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement">GitHub's privacy statement</a>.</li>
+    <li>The 3D libraries are loaded from the jsDelivr CDN, which likewise receives standard request information.</li>
+    <li>The optional tip jar on the website links to Ko-fi; nothing is shared with Ko-fi unless you choose to visit it.</li>
+  </ul>
+
+  <h2>Children</h2>
+  <p>The simulator is suitable for all ages and collects no personal information from anyone, including children.</p>
+
+  <h2>Changes and contact</h2>
+  <p>If this policy changes, the updated version will be posted on this page with a new date.
+    Questions: open an issue at <a href="https://github.com/loop-ship/Geo/issues">github.com/loop-ship/Geo/issues</a>.</p>
+
+  <p class="dim" style="margin-top:40px"><a href="geo.html">← Back to the simulator</a></p>
+</main>
+</body>
+</html>
