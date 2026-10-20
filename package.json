@@ -1,0 +1,28 @@
+{
+  "name": "poleshift-simulator",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Pole-Shift Simulator — native iOS/Android shell (Capacitor) around the geo.html web app.",
+  "type": "module",
+  "scripts": {
+    "build:web": "node scripts/build-web.mjs",
+    "sync": "npm run build:web && cap sync",
+    "assets": "capacitor-assets generate --ios --android --iconBackgroundColor '#05080d' --iconBackgroundColorDark '#05080d' --splashBackgroundColor '#05080d' --splashBackgroundColorDark '#05080d'",
+    "android": "npm run sync && cap open android",
+    "ios": "npm run sync && cap open ios"
+  },
+  "dependencies": {
+    "@capacitor/android": "^8.5.3",
+    "@capacitor/app": "^8.1.2",
+    "@capacitor/core": "^8.5.3",
+    "@capacitor/ios": "^8.5.3",
+    "@capacitor/share": "^8.0.3",
+    "@capacitor/splash-screen": "^8.0.2",
+    "lil-gui": "0.19.2",
+    "three": "0.161.0"
+  },
+  "devDependencies": {
+    "@capacitor/assets": "^3.0.5",
+    "@capacitor/cli": "^8.5.3"
+  }
+}

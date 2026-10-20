@@ -1,0 +1,27 @@
+{
+  "appId": "app.poleshift.simulator",
+  "appName": "Pole Shift",
+  "webDir": "www",
+  "backgroundColor": "#05080d",
+  "android": {
+    "backgroundColor": "#05080d"
+  },
+  "ios": {
+    "backgroundColor": "#05080d",
+    "contentInset": "never",
+    "scrollEnabled": false
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 1200,
+      "launchAutoHide": true,
+      "backgroundColor": "#05080d",
+      "showSpinner": false
+    },
+    "SystemBars": {
+      "insetsHandling": "css",
+      "initialViewportFitValueHint": "cover",
+      "style": "DARK"
+    }
+  }
+}

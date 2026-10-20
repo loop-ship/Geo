@@ -393,6 +393,10 @@
   }
   #friendly-bar button:hover { color: var(--cyan); border-color: var(--cyan); }
   #friendly-bar #plain-toggle.on { color: #05080d; background: var(--cyan); font-weight: 600; }
+  /* Store-app builds (html.native-app, set by the NATIVE block in the module script): no text-selection
+     loupe or long-press callout on the UI chrome — standard for a native app, and a browser tell otherwise. */
+  html.native-app body { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+  html.native-app input, html.native-app textarea, html.native-app #share-toast { -webkit-user-select: text; user-select: text; }
   /* Tip jar reads as optional generosity, not a core control — amber (the badge/accent colour), never cyan. */
   #friendly-bar #tip-btn { color: var(--amber); border-color: rgba(232,163,61,0.35); }
   #friendly-bar #tip-btn:hover { color: var(--amber); border-color: var(--amber); }
@@ -564,6 +568,7 @@
        (i.e. actually installable and not already installed), and removed again once installed. -->
   <button id="install-btn" title="Install as an app" style="display:none">⬇ Install</button>
   <button id="tip-btn" title="This is free forever — tips are optional">☕ Tip jar</button>
+  <button id="privacy-btn" title="Privacy policy — this app collects no personal data">Privacy</button>
 </div>
 
 <div id="explainer">
@@ -859,6 +864,21 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+
+// ---------- NATIVE APP SHELL (iOS / Android via Capacitor, 2026-10-20) ----------
+// The same geo.html ships inside the store apps (see capacitor.config.json + scripts/build-web.mjs).
+// There the page is served from capacitor://localhost (iOS) / https://localhost (Android), so anything
+// browser-only is switched off: service worker, PWA install prompts, the external tip jar (store payment
+// rules), and analytics (the store builds declare "no data collected"). Share links point at the public
+// site, since a localhost URL is useless to the person receiving it. On the web NATIVE is false and
+// nothing below changes behaviour.
+const NATIVE = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
+const PUBLIC_APP_URL = 'https://poleshift.app/geo.html';
+const PRIVACY_URL = 'https://poleshift.app/privacy.html';
+const nativePlugin = (name) => (NATIVE && window.Capacitor.isPluginAvailable(name)) ? window.Capacitor.registerPlugin(name) : null;
+const NativeShare = nativePlugin('Share');
+const NativeApp = nativePlugin('App');
+if (NATIVE) document.documentElement.classList.add('native-app');
 
 // ============================================================
 //  CONSTANTS (mirrored from header LOCKED CONSTANTS; see top of file for provenance)
@@ -3556,7 +3576,7 @@ function buildShareURL() {
     .map(k => (effectsParams[k] ? '+' : '-') + k);
   if (flipped.length) p.set('fx', flipped.join(','));
   const qs = p.toString();
-  return location.origin + location.pathname + (qs ? '#' + qs : '');
+  return (NATIVE ? PUBLIC_APP_URL : location.origin + location.pathname) + (qs ? '#' + qs : '');
 }
 
 function applySharedView(hash) {
@@ -3602,6 +3622,11 @@ async function shareCurrentView() {
   const url = buildShareURL();
   const title = 'Pole-Shift Simulator';
   try {
+    if (NativeShare) {
+      // Android's WebView has no navigator.share, and the clipboard fallback is a poor substitute in an app
+      await NativeShare.share({ title, text: 'A pole-shift scenario', url, dialogTitle: 'Share this view' });
+      return;
+    }
     if (navigator.share && /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent)) {
       await navigator.share({ title, text: 'A pole-shift scenario', url });
       return;
@@ -4591,7 +4616,7 @@ if (!_seenIntro) {
 // Registration is fully guarded: unsupported browsers, blocked registration, or a file:// open all
 // just skip it and the app runs exactly as before. See sw.js for the caching strategy (HTML is
 // network-first on purpose, so a pushed update always reaches returning visitors).
-if ('serviceWorker' in navigator) {
+if (!NATIVE && 'serviceWorker' in navigator) {   // the app bundle is already offline; a SW would only add staleness
   addEventListener('load', () => {
     navigator.serviceWorker.register('./sw.js').catch(() => { /* non-fatal: app works without offline support */ });
   });
@@ -4620,9 +4645,26 @@ addEventListener('appinstalled', () => {
 // Optional Ko-fi tip jar (2026-08-03, handle wired in 2026-08-04: ko-fi.com/loopship). Purely optional —
 // the app itself stays free/no-signup/no-paywall regardless of whether anyone clicks this.
 const _tipBtn = document.getElementById('tip-btn');
-if (_tipBtn) _tipBtn.addEventListener('click', () => {
+// App Store / Play rules route payments for digital goods through their own billing; an external tip link
+// is a common rejection reason, so the store builds simply don't offer it.
+if (_tipBtn && NATIVE) _tipBtn.remove();
+else if (_tipBtn) _tipBtn.addEventListener('click', () => {
   countEvent('tip-click', 'Tip jar clicked');
   window.open('https://ko-fi.com/loopship', '_blank', 'noopener');
+});
+// Both stores require the privacy policy to be reachable from inside the app, not only from the listing.
+const _privacyBtn = document.getElementById('privacy-btn');
+if (_privacyBtn) _privacyBtn.addEventListener('click', () => window.open(PRIVACY_URL, '_blank', 'noopener'));
+// Android hardware/gesture back: close whatever is open on top of the globe before leaving the app.
+if (NativeApp) NativeApp.addListener('backButton', () => {
+  const explainer = document.getElementById('explainer');
+  if (document.body.classList.contains('drawer-open') && !window.matchMedia('(min-width: 900px)').matches) {
+    setDrawerOpen(false);
+  } else if (explainer && explainer.style.display === 'block') {
+    document.getElementById('explain-close').click();   // same path as tapping × (also marks the intro seen)
+  } else {
+    NativeApp.exitApp();
+  }
 });
 
 // ============================================================
@@ -4654,7 +4696,7 @@ if (_tipBtn) _tipBtn.addEventListener('click', () => {
 const ANALYTICS = { code: 'loopship' };    // <-- your goatcounter site code goes here; '' = disabled
 
 function analyticsEnabled() {
-  if (!ANALYTICS.code) return false;
+  if (!ANALYTICS.code || NATIVE) return false;   // store builds collect nothing (matches their privacy labels)
   // Honour Do Not Track, and never run from a file:// or local dev origin.
   if (navigator.doNotTrack === '1' || window.doNotTrack === '1') return false;
   return location.protocol === 'https:';
@@ -4693,7 +4735,7 @@ function countEvent(path, title) {
   const isIOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
   const isSafari = /Safari/.test(ua) && !/CriOS|FxiOS|EdgiOS/.test(ua);
   const alreadyInstalled = window.navigator.standalone === true;
-  if (!isIOS || !isSafari || alreadyInstalled || !_installBtn) return;
+  if (NATIVE || !isIOS || !isSafari || alreadyInstalled || !_installBtn) return;
   let dismissed = false;
   try { dismissed = localStorage.getItem('geo_ios_install_hint') === '1'; } catch (e) {}
   if (dismissed) return;

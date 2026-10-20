@@ -1,0 +1,59 @@
+# Android build. Every push/PR touching the app builds a debug APK (catches breakage early).
+# Manual runs (Actions → Android → Run workflow) and v* tags build the signed release bundle (.aab)
+# that gets uploaded to Google Play Console.
+#
+# Repository secrets needed for the release job (Settings → Secrets and variables → Actions):
+#   ANDROID_KEYSTORE_BASE64   base64 of the upload keystore (.jks)   e.g. `base64 -w0 release.jks`
+#   ANDROID_KEYSTORE_PASSWORD
+#   ANDROID_KEY_ALIAS
+#   ANDROID_KEY_PASSWORD
+# See store/SUBMISSION.md for how to create the keystore. Keep a backup of it — Play App Signing lets you
+# reset a lost upload key, but only through a support request.
+name: Android
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+    paths: ['geo.html', 'android/**', 'scripts/**', 'package*.json', 'capacitor.config.json', '*.png', '*.jpg', 'plate_boundaries.json', '.github/workflows/android.yml']
+  pull_request:
+    paths: ['geo.html', 'android/**', 'scripts/**', 'package*.json', 'capacitor.config.json', '.github/workflows/android.yml']
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: 21, cache: gradle }
+      - run: npm ci
+      - run: npm run build:web && npx cap sync android
+
+      - name: Debug APK
+        if: github.event_name != 'workflow_dispatch' && !startsWith(github.ref, 'refs/tags/')
+        working-directory: android
+        run: ./gradlew assembleDebug --no-daemon
+      - uses: actions/upload-artifact@v4
+        if: github.event_name != 'workflow_dispatch' && !startsWith(github.ref, 'refs/tags/')
+        with: { name: poleshift-debug-apk, path: android/app/build/outputs/apk/debug/*.apk }
+
+      - name: Signed release bundle
+        if: github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/')
+        working-directory: android
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+          # Play requires every upload's versionCode to be higher than the last; the run number always is.
+          ANDROID_VERSION_CODE: ${{ github.run_number }}
+        run: |
+          if [ -z "$ANDROID_KEYSTORE_BASE64" ]; then echo "::error::ANDROID_KEYSTORE_BASE64 secret is not set"; exit 1; fi
+          echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/release.jks"
+          ANDROID_KEYSTORE_PATH="$RUNNER_TEMP/release.jks" ./gradlew bundleRelease --no-daemon
+      - uses: actions/upload-artifact@v4
+        if: github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/')
+        with: { name: poleshift-release-aab, path: android/app/build/outputs/bundle/release/*.aab }

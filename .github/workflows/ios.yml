@@ -1,0 +1,71 @@
+# iOS build. Every push/PR touching the app compiles for the simulator, unsigned (catches breakage early).
+# Manual runs (Actions → iOS → Run workflow) and v* tags archive a signed build and upload it straight to
+# App Store Connect / TestFlight, using Xcode's cloud signing with an App Store Connect API key — so no
+# certificates or provisioning profiles have to be exported by hand.
+#
+# Repository secrets needed for the release job:
+#   APPLE_TEAM_ID               10-character Team ID (developer.apple.com → Membership)
+#   ASC_KEY_ID                  App Store Connect API key ID     (Users and Access → Integrations → Keys;
+#   ASC_ISSUER_ID               Issuer ID shown on that page      the key needs the Admin role so Xcode
+#   ASC_PRIVATE_KEY             full contents of the .p8 file     may create the distribution certificate)
+# The app record (bundle ID app.poleshift.simulator) must already exist in App Store Connect.
+name: iOS
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+    paths: ['geo.html', 'ios/**', 'scripts/**', 'package*.json', 'capacitor.config.json', '*.png', '*.jpg', 'plate_boundaries.json', '.github/workflows/ios.yml']
+  pull_request:
+    paths: ['geo.html', 'ios/**', 'scripts/**', 'package*.json', 'capacitor.config.json', '.github/workflows/ios.yml']
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - run: npm ci
+      - run: npm run build:web && npx cap sync ios
+
+      - name: Simulator build (unsigned)
+        if: github.event_name != 'workflow_dispatch' && !startsWith(github.ref, 'refs/tags/')
+        working-directory: ios/App
+        run: |
+          xcodebuild -project App.xcodeproj -scheme App -configuration Debug \
+            -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO build
+
+      - name: Archive and upload to App Store Connect
+        if: github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/')
+        working-directory: ios/App
+        env:
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_PRIVATE_KEY: ${{ secrets.ASC_PRIVATE_KEY }}
+        run: |
+          for v in APPLE_TEAM_ID ASC_KEY_ID ASC_ISSUER_ID ASC_PRIVATE_KEY; do
+            if [ -z "${!v}" ]; then echo "::error::$v secret is not set"; exit 1; fi
+          done
+          KEY="$RUNNER_TEMP/AuthKey_$ASC_KEY_ID.p8"
+          printf '%s' "$ASC_PRIVATE_KEY" > "$KEY"
+          AUTH=(-allowProvisioningUpdates -authenticationKeyPath "$KEY" -authenticationKeyID "$ASC_KEY_ID" -authenticationKeyIssuerID "$ASC_ISSUER_ID")
+          # App Store Connect rejects a build number it has already seen; the run number always increases.
+          xcodebuild -project App.xcodeproj -scheme App -configuration Release \
+            -destination 'generic/platform=iOS' -archivePath "$RUNNER_TEMP/App.xcarchive" \
+            DEVELOPMENT_TEAM="$APPLE_TEAM_ID" CODE_SIGN_STYLE=Automatic CURRENT_PROJECT_VERSION=${{ github.run_number }} \
+            "${AUTH[@]}" archive
+          cat > "$RUNNER_TEMP/ExportOptions.plist" <<PLIST
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0"><dict>
+            <key>method</key><string>app-store-connect</string>
+            <key>destination</key><string>upload</string>
+            <key>teamID</key><string>$APPLE_TEAM_ID</string>
+            <key>signingStyle</key><string>automatic</string>
+          </dict></plist>
+          PLIST
+          xcodebuild -exportArchive -archivePath "$RUNNER_TEMP/App.xcarchive" \
+            -exportOptionsPlist "$RUNNER_TEMP/ExportOptions.plist" -exportPath "$RUNNER_TEMP/export" "${AUTH[@]}"

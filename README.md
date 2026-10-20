@@ -24,6 +24,14 @@ python -m http.server 8000
 sibling terrain/texture files. Any static host, including the served folder above or GitHub
 Pages, is fine.)
 
+## iOS and Android apps
+
+The same app ships to the App Store and Google Play as a [Capacitor](https://capacitorjs.com) shell
+(`android/`, `ios/`, `capacitor.config.json`). `npm ci && npm run sync` builds the offline bundle into
+`www/` and copies it into both projects; GitHub Actions builds the signed releases. Full steps, store
+metadata and the pre-submission checklist: **[`store/SUBMISSION.md`](store/SUBMISSION.md)** and
+[`store/STORE_LISTING.md`](store/STORE_LISTING.md).
+
 ## What's here
 
 - **`geo.html`** — the application. It is *self-describing*: a long header comment records the
@@ -33,6 +41,7 @@ Pages, is fine.)
 - **`earth_terrainrgb.png`, `plate_boundaries.json`, `earth_day.jpg`, `earth_night.jpg`,
   `earth_specular_clouds.jpg`** — the runtime data (real ETOPO-derived terrain, plate boundaries,
   and photoreal Earth textures).
+- **`privacy.html`** — privacy policy for the site and the apps (linked from the app and both store listings).
 - **`research/`** — the five research reports and premise audit behind the model, plus the full
   dated `CHANGELOG.md`.
 - **`build/`** — data-generator scripts and their raw sources (not needed to run the app; not

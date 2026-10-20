@@ -28,3 +28,8 @@ Desktop.ini
 .DS_Store
 *.swp
 *~
+
+# --- Native app shell (Capacitor) ---
+# www/ is generated from geo.html by `npm run build:web`; the native projects copy it in on `cap sync`.
+node_modules/
+www/
