@@ -38,7 +38,7 @@ After any change to geo.html or its assets, run `npm run sync` again. To regener
    base64 -w0 release.jks   # macOS: base64 -i release.jks
    ```
 2. Add GitHub repository secrets: `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`,
-   `ANDROID_KEY_ALIAS` (= `poleshift`), `ANDROID_KEY_PASSWORD`.
+   `ANDROID_KEY_ALIAS` (= `poleshift-upload`), `ANDROID_KEY_PASSWORD`.
 3. **Actions → Android → Run workflow.** Download the `poleshift-release-aab` artifact.
    (Or locally: fill `android/keystore.properties` from the `.example`, then `cd android && ./gradlew bundleRelease`.)
 4. Play Console → **Create app** (name, Default language English, App, Free). Accept **Play App Signing**.
@@ -52,7 +52,7 @@ Target API level: the project targets **Android 16 (API 36)**, above Play's curr
 
 ## 3. Apple App Store
 
-1. https://developer.apple.com/account → **Identifiers** → register App ID `app.poleshift.simulator`.
+1. https://developer.apple.com/account → **Identifiers** → register App ID `com.loopship.poleshift`.
 2. https://appstoreconnect.apple.com → **Apps → +** → New App: iOS, name "Pole-Shift Simulator",
    bundle ID above, SKU `poleshift-ios`.
 3. **Users and Access → Integrations → App Store Connect API → Generate key** with **Admin** access

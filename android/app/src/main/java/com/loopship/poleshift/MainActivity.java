@@ -1,4 +1,4 @@
-package app.poleshift.simulator;
+package com.loopship.poleshift;
 
 import com.getcapacitor.BridgeActivity;
 

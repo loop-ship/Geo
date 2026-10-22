@@ -8,7 +8,7 @@
 #   ASC_KEY_ID                  App Store Connect API key ID     (Users and Access → Integrations → Keys;
 #   ASC_ISSUER_ID               Issuer ID shown on that page      the key needs the Admin role so Xcode
 #   ASC_PRIVATE_KEY             full contents of the .p8 file     may create the distribution certificate)
-# The app record (bundle ID app.poleshift.simulator) must already exist in App Store Connect.
+# The app record (bundle ID com.loopship.poleshift) must already exist in App Store Connect.
 name: iOS
 
 on:

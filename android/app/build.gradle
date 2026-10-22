@@ -10,7 +10,7 @@ def signingValue = { String key, String env -> keystoreProps.getProperty(key) ?:
 def releaseStoreFile = signingValue('storeFile', 'ANDROID_KEYSTORE_PATH')
 
 android {
-    namespace = "app.poleshift.simulator"
+    namespace = "com.loopship.poleshift"
     compileSdk = rootProject.ext.compileSdkVersion
     defaultConfig {
         applicationId "com.loopship.poleshift"

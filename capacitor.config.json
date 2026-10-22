@@ -1,5 +1,5 @@
 {
-  "appId": "app.poleshift.simulator",
+  "appId": "com.loopship.poleshift",
   "appName": "Pole Shift",
   "webDir": "www",
   "backgroundColor": "#05080d",

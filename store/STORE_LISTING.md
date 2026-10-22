@@ -7,7 +7,7 @@ Everything below is written to pass review as-is. Keep it consistent with `priva
 | Field | Value |
 |---|---|
 | App name (both stores) | **Pole-Shift Simulator** (home-screen label: "Pole Shift") |
-| Bundle ID / package name | `app.poleshift.simulator` — permanent once uploaded |
+| Bundle ID / package name | `com.loopship.poleshift` — permanent once uploaded |
 | Version | 1.0.0 |
 | Category | Education (secondary: Reference on iOS) |
 | Price | Free, no in-app purchases, no ads |
