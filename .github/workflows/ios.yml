@@ -1,7 +1,8 @@
-# iOS build. Every push/PR touching the app compiles for the simulator, unsigned (catches breakage early).
-# Manual runs (Actions → iOS → Run workflow) and v* tags archive a signed build and upload it straight to
-# App Store Connect / TestFlight, using Xcode's cloud signing with an App Store Connect API key — so no
-# certificates or provisioning profiles have to be exported by hand.
+# iOS build. PRs and pushes to main compile for the simulator, unsigned (catches breakage early).
+# Pushes to app-store-release, v* tags and manual runs also archive a Release build (unsigned) to catch
+# archive errors. NOTHING is uploaded unless the workflow is run by hand (Actions → iOS → Run workflow)
+# with the "upload" box ticked: only then is the archive signed (Xcode cloud signing with an App Store
+# Connect API key) and sent to App Store Connect / TestFlight. Pushes and tags can never upload.
 #
 # Repository secrets needed for the release job:
 #   APPLE_TEAM_ID               10-character Team ID (developer.apple.com → Membership)
@@ -19,14 +20,19 @@ on:
   pull_request:
     paths: ['geo.html', 'ios/**', 'scripts/**', 'package*.json', 'capacitor.config.json', '.github/workflows/ios.yml']
   workflow_dispatch:
+    inputs:
+      upload:
+        description: 'Upload the build to App Store Connect / TestFlight'
+        type: boolean
+        required: true
+        default: false
 
 jobs:
   build:
     runs-on: macos-15
     env:
-      # Pushes to app-store-release archive + upload once the App Store Connect secrets exist;
-      # until then they fall back to the unsigned simulator build.
-      RELEASE: ${{ (github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/') || (github.ref == 'refs/heads/app-store-release' && secrets.ASC_PRIVATE_KEY != '')) && 'true' || 'false' }}
+      # ARCHIVE: build the Release archive (no signing, no upload). Upload is a separate, gated step below.
+      ARCHIVE: ${{ (github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/') || github.ref == 'refs/heads/app-store-release') && 'true' || 'false' }}
     steps:
       # App Store Connect only accepts builds made with the iOS 26 SDK (Xcode 26) or later.
       - name: Select Xcode 26
@@ -42,35 +48,49 @@ jobs:
       - run: npm run build:web && npx cap sync ios
 
       - name: Simulator build (unsigned)
-        if: env.RELEASE != 'true'
+        if: env.ARCHIVE != 'true'
         working-directory: ios/App
         run: |
           xcodebuild -project App.xcodeproj -scheme App -configuration Debug \
             -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO build
 
-      - name: Archive and upload to App Store Connect
-        if: env.RELEASE == 'true'
+      - name: Archive (unsigned, no upload)
+        if: env.ARCHIVE == 'true'
+        working-directory: ios/App
+        env:
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          # App Store Connect rejects a build number it has already seen; the run number always increases.
+          # The archive is left unsigned: automatic signing at archive time wants an iOS Development profile,
+          # which Apple refuses to make for a team with no registered devices. The gated upload step below
+          # signs it for App Store distribution at export time.
+          xcodebuild -project App.xcodeproj -scheme App -configuration Release \
+            -destination 'generic/platform=iOS' -archivePath "$RUNNER_TEMP/App.xcarchive" \
+            DEVELOPMENT_TEAM="$APPLE_TEAM_ID" CODE_SIGN_STYLE=Automatic CURRENT_PROJECT_VERSION=${{ github.run_number }} \
+            CODE_SIGNING_ALLOWED=NO archive
+
+      # The ONLY step that talks to App Store Connect. Runs only on a manual run with upload=true;
+      # pushes, tags and PRs skip it.
+      - name: Sign and upload to App Store Connect (manual, upload=true only)
+        if: github.event_name == 'workflow_dispatch' && inputs.upload == true
         working-directory: ios/App
         env:
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
           ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
           ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
           ASC_PRIVATE_KEY: ${{ secrets.ASC_PRIVATE_KEY }}
+          UPLOAD_REQUESTED: ${{ github.event_name == 'workflow_dispatch' && inputs.upload == true }}
         run: |
+          # Belt and braces: refuse to upload unless this really is a manual run with upload ticked.
+          if [ "$GITHUB_EVENT_NAME" != "workflow_dispatch" ] || [ "$UPLOAD_REQUESTED" != "true" ]; then
+            echo "::error::upload is only allowed on workflow_dispatch with upload=true"; exit 1
+          fi
           for v in APPLE_TEAM_ID ASC_KEY_ID ASC_ISSUER_ID ASC_PRIVATE_KEY; do
             if [ -z "${!v}" ]; then echo "::error::$v secret is not set"; exit 1; fi
           done
           KEY="$RUNNER_TEMP/AuthKey_$ASC_KEY_ID.p8"
           printf '%s' "$ASC_PRIVATE_KEY" > "$KEY"
           AUTH=(-allowProvisioningUpdates -authenticationKeyPath "$KEY" -authenticationKeyID "$ASC_KEY_ID" -authenticationKeyIssuerID "$ASC_ISSUER_ID")
-          # App Store Connect rejects a build number it has already seen; the run number always increases.
-          xcodebuild -project App.xcodeproj -scheme App -configuration Release \
-            -destination 'generic/platform=iOS' -archivePath "$RUNNER_TEMP/App.xcarchive" \
-            DEVELOPMENT_TEAM="$APPLE_TEAM_ID" CODE_SIGN_STYLE=Automatic CURRENT_PROJECT_VERSION=${{ github.run_number }} \
-            CODE_SIGNING_ALLOWED=NO archive
-          # The archive is left unsigned: automatic signing at archive time wants an iOS Development profile,
-          # which Apple refuses to make for a team with no registered devices. -exportArchive below signs it
-          # for App Store distribution with Xcode cloud signing (the Admin API key).
           cat > "$RUNNER_TEMP/ExportOptions.plist" <<PLIST
           <?xml version="1.0" encoding="UTF-8"?>
           <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">

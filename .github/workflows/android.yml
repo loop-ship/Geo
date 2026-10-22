@@ -1,7 +1,8 @@
 # Android build. Every push/PR touching the app builds a debug APK (catches breakage early).
-# Manual runs (Actions → Android → Run workflow) and v* tags build the signed release bundle (.aab)
-# that gets uploaded to Google Play Console. Pushes to app-store-release also build the signed bundle
-# (workflow_dispatch only works once this file is on the default branch).
+# Manual runs (Actions → Android → Run workflow), v* tags and pushes to app-store-release build the signed
+# release bundle (.aab) and keep it as a workflow artifact only. This workflow never uploads to Google Play:
+# the .aab is uploaded to Play Console by hand. (workflow_dispatch only works once this file is on the
+# default branch.)
 #
 # Repository secrets needed for the release job (Settings → Secrets and variables → Actions):
 #   ANDROID_KEYSTORE_BASE64   base64 of the upload keystore (.jks)   e.g. `base64 -w0 release.jks`
