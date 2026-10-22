@@ -28,6 +28,13 @@ jobs:
       # until then they fall back to the unsigned simulator build.
       RELEASE: ${{ (github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/') || (github.ref == 'refs/heads/app-store-release' && secrets.ASC_PRIVATE_KEY != '')) && 'true' || 'false' }}
     steps:
+      # App Store Connect only accepts builds made with the iOS 26 SDK (Xcode 26) or later.
+      - name: Select Xcode 26
+        run: |
+          ls -d /Applications/Xcode*.app
+          X=$(ls -d /Applications/Xcode_26*.app | sort -V | tail -1)
+          [ -n "$X" ] || { echo "::error::no Xcode 26 on this runner image"; exit 1; }
+          sudo xcode-select -s "$X/Contents/Developer" && xcodebuild -version
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with: { node-version: 22, cache: npm }
