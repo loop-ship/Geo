@@ -60,7 +60,10 @@ jobs:
           xcodebuild -project App.xcodeproj -scheme App -configuration Release \
             -destination 'generic/platform=iOS' -archivePath "$RUNNER_TEMP/App.xcarchive" \
             DEVELOPMENT_TEAM="$APPLE_TEAM_ID" CODE_SIGN_STYLE=Automatic CURRENT_PROJECT_VERSION=${{ github.run_number }} \
-            "${AUTH[@]}" archive
+            CODE_SIGNING_ALLOWED=NO archive
+          # The archive is left unsigned: automatic signing at archive time wants an iOS Development profile,
+          # which Apple refuses to make for a team with no registered devices. -exportArchive below signs it
+          # for App Store distribution with Xcode cloud signing (the Admin API key).
           cat > "$RUNNER_TEMP/ExportOptions.plist" <<PLIST
           <?xml version="1.0" encoding="UTF-8"?>
           <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
