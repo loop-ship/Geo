@@ -13,7 +13,7 @@ name: iOS
 
 on:
   push:
-    branches: [main]
+    branches: [main, app-store-release]
     tags: ['v*']
     paths: ['geo.html', 'ios/**', 'scripts/**', 'package*.json', 'capacitor.config.json', '*.png', '*.jpg', 'plate_boundaries.json', '.github/workflows/ios.yml']
   pull_request:
@@ -23,6 +23,10 @@ on:
 jobs:
   build:
     runs-on: macos-15
+    env:
+      # Pushes to app-store-release archive + upload once the App Store Connect secrets exist;
+      # until then they fall back to the unsigned simulator build.
+      RELEASE: ${{ (github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/') || (github.ref == 'refs/heads/app-store-release' && secrets.ASC_PRIVATE_KEY != '')) && 'true' || 'false' }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -31,14 +35,14 @@ jobs:
       - run: npm run build:web && npx cap sync ios
 
       - name: Simulator build (unsigned)
-        if: github.event_name != 'workflow_dispatch' && !startsWith(github.ref, 'refs/tags/')
+        if: env.RELEASE != 'true'
         working-directory: ios/App
         run: |
           xcodebuild -project App.xcodeproj -scheme App -configuration Debug \
             -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO build
 
       - name: Archive and upload to App Store Connect
-        if: github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/')
+        if: env.RELEASE == 'true'
         working-directory: ios/App
         env:
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
