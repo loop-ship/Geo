@@ -1,0 +1,16 @@
+[
+  {"name": "01-ecdo-shift", "desc": "ECDO preset: pole moved 104° to Zambia, flood colouring + caption",
+   "steps": [{"click": "▸ ECDO — Zambia (104°)"}, {"wait": 14000}]},
+  {"name": "02-hudson-bay-floods", "desc": "Hapgood preset: Hudson Bay as the new North Pole, flooded/exposed coastlines",
+   "steps": [{"click": "▸ Hapgood — Hudson Bay"}, {"wait": 14000}, {"id": "scenario-close"}, {"wait": 1500}]},
+  {"name": "03-quake-hotspots", "desc": "Davidson preset with stress overlay: earthquake and volcano hotspot layer",
+   "steps": [{"click": "▸ Davidson — Bay of Bengal (75°)"}, {"wait": 14000}, {"id": "scenario-close"},
+             {"eval": "document.querySelectorAll('.lil-gui .name').forEach(function(n){if(/stress/i.test(n.textContent)&&/overlay/i.test(n.textContent)){var i=n.parentNode.querySelector('input[type=checkbox]');if(i&&!i.checked)i.click();}})"},
+             {"wait": 3000}]},
+  {"name": "04-model-caveats", "desc": "Model Caveats panel open over the shifted globe",
+   "hash": "lat=-14&lon=31", "search": "?caveats=1", "steps": [{"wait": 3000}]},
+  {"name": "05-guided-story", "desc": "Guided story playing, with caption and story transport bar",
+   "steps": [{"click": "▶ Play guided story"}, {"wait": 16000}]},
+  {"name": "06-advanced-controls", "desc": "Advanced mode with the full controls drawer open",
+   "hash": "lat=60&lon=-73", "steps": [{"id": "mode-advanced"}, {"id": "gui-toggle"}, {"wait": 2500}]}
+]

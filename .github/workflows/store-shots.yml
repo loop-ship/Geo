@@ -1,0 +1,73 @@
+# Store screenshots from the NATIVE apps (Simulator / emulator), on free GitHub-hosted runners.
+# Builds use STORE_SHOTS=1, which adds scripts/store-shots/shot.js to www/ to drive each scene in
+# scripts/store-shots/scenes.json. These builds are for screenshots only and are never uploaded.
+name: Store screenshots
+
+on:
+  push:
+    branches: [app-store-release]
+    paths: ['scripts/store-shots/**', '.github/workflows/store-shots.yml']
+  workflow_dispatch:
+
+jobs:
+  ios:
+    runs-on: macos-15
+    timeout-minutes: 60
+    env:
+      DERIVED: ${{ github.workspace }}/ios-derived
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - run: npm ci
+      - run: STORE_SHOTS=1 npm run build:web && npx cap sync ios
+      - name: Simulator build
+        working-directory: ios/App
+        run: |
+          xcodebuild -project App.xcodeproj -scheme App -configuration Debug -sdk iphonesimulator \
+            -destination 'generic/platform=iOS Simulator' -derivedDataPath "$DERIVED" CODE_SIGNING_ALLOWED=NO build -quiet
+      - run: xcrun simctl list devices available | grep -E "iPhone|iPad" | head -40
+      - run: bash scripts/store-shots/ios.sh "iPhone 16 Pro Max" shots/iphone69
+      - run: bash scripts/store-shots/ios.sh "iPad Pro 13-inch (M4)" shots/ipad13
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: { name: shots-ios, path: shots/ }
+
+  android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { kind: play-phone, profile: 'Nexus 5X', orient: portrait }
+          - { kind: play-tablet, profile: 'Nexus 10', orient: landscape }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: 21, cache: gradle }
+      - run: npm ci
+      - run: STORE_SHOTS=1 npm run build:web && npx cap sync android
+      - working-directory: android
+        run: ./gradlew assembleDebug --no-daemon
+      - run: pip install websocket-client
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules && sudo udevadm trigger --name-match=kvm
+      - uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          target: google_apis
+          arch: x86_64
+          profile: ${{ matrix.profile }}
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim
+          script: bash scripts/store-shots/android.sh shots/${{ matrix.kind }} ${{ matrix.orient }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: shots-${{ matrix.kind }}
+          path: shots/

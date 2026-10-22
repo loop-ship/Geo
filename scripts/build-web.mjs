@@ -69,5 +69,12 @@ for (const [, rel] of page.matchAll(/from 'three\/addons\/([^']+)'/g)) {
   if (!existsSync(join(out, 'vendor/three/examples/jsm', rel))) throw new Error(`three/addons/${rel} is not vendored — add its folder to THREE_ADDON_DIRS`);
 }
 
+// CI screenshot builds only (STORE_SHOTS=1): add the scene driver. Release builds never include it.
+if (process.env.STORE_SHOTS === '1') {
+  cpSync(join(root, 'scripts/store-shots/shot.js'), join(out, 'shot.js'));
+  writeFileSync(join(out, 'shot-scene.js'), '');
+  page = page.replace('<script src="./vendor/capacitor.js"></script>', '<script src="./vendor/capacitor.js"></script>\n<script src="./shot-scene.js"></script>\n<script src="./shot.js"></script>');
+}
+
 writeFileSync(join(out, 'index.html'), page);
 console.log('www/ built: index.html + %d assets + vendored three@%s, lil-gui@%s', ASSETS.length, pin('three'), pin('lil-gui'));
