@@ -16,6 +16,10 @@ adb shell settings put system accelerometer_rotation 0
 if [ "$ORIENT" = landscape ]; then adb shell wm size 2560x1600; adb shell wm density 320
 else adb shell wm size 1080x1920; adb shell wm density 420; fi
 sleep 5
+# No "Viewing full screen" tip, no launcher ANR dialog, no tablet taskbar (it belongs to the launcher).
+adb shell settings put secure immersive_mode_confirmations confirmed
+adb shell settings put global hide_error_dialogs 1 || true
+adb shell pm disable-user --user 0 com.google.android.apps.nexuslauncher || true
 adb install -r android/app/build/outputs/apk/debug/app-debug.apk
 # ShotActivity (debug builds only) is MainActivity with the status/navigation bars hidden.
 adb shell am start -n $PKG/.ShotActivity
