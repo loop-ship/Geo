@@ -11,10 +11,19 @@ on:
 
 jobs:
   ios:
-    # A commit message containing [android-only] reruns just the emulator shots.
+    # A commit message containing [android-only] reruns just the emulator shots. One Simulator per job, in
+    # parallel (a cold Simulator boot on the hosted runners takes 10-25 min, too slow to run four in a row).
     if: ${{ !contains(github.event.head_commit.message, '[android-only]') }}
     runs-on: macos-15
-    timeout-minutes: 60
+    timeout-minutes: 75
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { kind: iphone69, device: 'iPhone 16 Pro Max' }
+          - { kind: ipad13, device: 'iPad Pro 13-inch (M4)' }
+          - { kind: iphone67, device: 'iPhone 16 Plus' }
+          - { kind: iphone65, device: 'iPhone 11 Pro Max' }
     env:
       DERIVED: ${{ github.workspace }}/ios-derived
     steps:
@@ -28,16 +37,15 @@ jobs:
         run: |
           xcodebuild -project App.xcodeproj -scheme App -configuration Debug -sdk iphonesimulator \
             -destination 'generic/platform=iOS Simulator' -derivedDataPath "$DERIVED" CODE_SIGNING_ALLOWED=NO build -quiet
-      - run: xcrun simctl list devices available | grep -E "iPhone|iPad" | head -40
-      - run: bash scripts/store-shots/ios.sh "iPhone 16 Pro Max" shots/iphone69
-      - run: bash scripts/store-shots/ios.sh "iPad Pro 13-inch (M4)" shots/ipad13
-      - run: bash scripts/store-shots/ios.sh "iPhone 16 Plus" shots/iphone67
-      - run: bash scripts/store-shots/ios.sh "iPhone 11 Pro Max" shots/iphone65
+      - run: bash scripts/store-shots/ios.sh "${{ matrix.device }}" shots/${{ matrix.kind }}
       - uses: actions/upload-artifact@v4
         if: always()
-        with: { name: shots-ios, path: shots/ }
+        with:
+          name: shots-${{ matrix.kind }}
+          path: shots/
 
   android:
+    if: ${{ !contains(github.event.head_commit.message, '[ios-only]') }}
     runs-on: ubuntu-latest
     timeout-minutes: 60
     strategy:
