@@ -13,7 +13,7 @@ android {
     namespace = "app.poleshift.simulator"
     compileSdk = rootProject.ext.compileSdkVersion
     defaultConfig {
-        applicationId "app.poleshift.simulator"
+        applicationId "com.loopship.poleshift"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         // Play rejects an upload whose versionCode isn't higher than the last one; CI passes the run number.

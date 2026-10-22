@@ -2,6 +2,6 @@
 <resources>
     <string name="app_name">Pole Shift</string>
     <string name="title_activity_main">Pole Shift</string>
-    <string name="package_name">app.poleshift.simulator</string>
-    <string name="custom_url_scheme">app.poleshift.simulator</string>
+    <string name="package_name">com.loopship.poleshift</string>
+    <string name="custom_url_scheme">com.loopship.poleshift</string>
 </resources>
