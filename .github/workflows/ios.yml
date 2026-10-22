@@ -15,7 +15,7 @@ on:
   push:
     branches: [main, app-store-release]
     tags: ['v*']
-    paths: ['geo.html', 'ios/**', 'scripts/**', 'package*.json', 'capacitor.config.json', '*.png', '*.jpg', 'plate_boundaries.json', '.github/workflows/ios.yml']
+    paths: ['geo.html', 'ios/**', 'scripts/**', '!scripts/store-shots/**', 'package*.json', 'capacitor.config.json', '*.png', '*.jpg', 'plate_boundaries.json', '.github/workflows/ios.yml']
   pull_request:
     paths: ['geo.html', 'ios/**', 'scripts/**', 'package*.json', 'capacitor.config.json', '.github/workflows/ios.yml']
   workflow_dispatch:

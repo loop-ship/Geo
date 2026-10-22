@@ -25,7 +25,7 @@ def ev(expr):
     global n
     for _ in range(5):
         try:
-            ws = websocket.create_connection(target(), timeout=30); n += 1
+            ws = websocket.create_connection(target(), timeout=30, suppress_origin=True); n += 1
             ws.send(json.dumps({'id': n, 'method': 'Runtime.evaluate', 'params': {'expression': expr, 'returnByValue': True}}))
             while True:
                 r = json.loads(ws.recv())

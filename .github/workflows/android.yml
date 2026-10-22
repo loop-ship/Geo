@@ -16,7 +16,7 @@ on:
   push:
     branches: [main, app-store-release]
     tags: ['v*']
-    paths: ['geo.html', 'android/**', 'scripts/**', 'package*.json', 'capacitor.config.json', '*.png', '*.jpg', 'plate_boundaries.json', '.github/workflows/android.yml']
+    paths: ['geo.html', 'android/**', 'scripts/**', '!scripts/store-shots/**', 'package*.json', 'capacitor.config.json', '*.png', '*.jpg', 'plate_boundaries.json', '.github/workflows/android.yml']
   pull_request:
     paths: ['geo.html', 'android/**', 'scripts/**', 'package*.json', 'capacitor.config.json', '.github/workflows/android.yml']
   workflow_dispatch:
