@@ -6,11 +6,13 @@ name: Store screenshots
 on:
   push:
     branches: [app-store-release]
-    paths: ['scripts/store-shots/**', '.github/workflows/store-shots.yml']
+    paths: ['scripts/store-shots/**', 'android/app/src/debug/**', '.github/workflows/store-shots.yml']
   workflow_dispatch:
 
 jobs:
   ios:
+    # A commit message containing [android-only] reruns just the emulator shots.
+    if: ${{ !contains(github.event.head_commit.message, '[android-only]') }}
     runs-on: macos-15
     timeout-minutes: 60
     env:
@@ -66,6 +68,8 @@ jobs:
           arch: x86_64
           profile: ${{ matrix.profile }}
           disable-animations: true
+          ram-size: 4096M
+          heap-size: 1024M
           emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim
           script: bash scripts/store-shots/android.sh shots/${{ matrix.kind }} ${{ matrix.orient }}
       - uses: actions/upload-artifact@v4

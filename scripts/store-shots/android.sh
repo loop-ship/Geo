@@ -11,10 +11,13 @@ adb shell am broadcast -a com.android.systemui.demo -e command clock -e hhmm 094
 adb shell am broadcast -a com.android.systemui.demo -e command battery -e level 100 -e plugged false >/dev/null
 adb shell am broadcast -a com.android.systemui.demo -e command network -e wifi show -e level 4 >/dev/null
 adb shell am broadcast -a com.android.systemui.demo -e command notifications -e visible false >/dev/null
-if [ "$ORIENT" = landscape ]; then
-  adb shell settings put system accelerometer_rotation 0; adb shell settings put system user_rotation 1
-fi
+# Force the exact store pixel size: phone 1080x1920 portrait, tablet 2560x1600 landscape.
+adb shell settings put system accelerometer_rotation 0
+if [ "$ORIENT" = landscape ]; then adb shell wm size 2560x1600; adb shell wm density 320
+else adb shell wm size 1080x1920; adb shell wm density 420; fi
+sleep 5
 adb install -r android/app/build/outputs/apk/debug/app-debug.apk
-adb shell am start -n $PKG/.MainActivity
+# ShotActivity (debug builds only) is MainActivity with the status/navigation bars hidden.
+adb shell am start -n $PKG/.ShotActivity
 sleep 30
-python3 "$(dirname "$0")/cdp.py" "$(dirname "$0")/scenes.json" "$OUT"
+python3 -u "$(dirname "$0")/cdp.py" "$(dirname "$0")/scenes.json" "$OUT"
