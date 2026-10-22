@@ -29,6 +29,8 @@ jobs:
       - run: xcrun simctl list devices available | grep -E "iPhone|iPad" | head -40
       - run: bash scripts/store-shots/ios.sh "iPhone 16 Pro Max" shots/iphone69
       - run: bash scripts/store-shots/ios.sh "iPad Pro 13-inch (M4)" shots/ipad13
+      - run: bash scripts/store-shots/ios.sh "iPhone 16 Plus" shots/iphone67
+      - run: bash scripts/store-shots/ios.sh "iPhone 11 Pro Max" shots/iphone65
       - uses: actions/upload-artifact@v4
         if: always()
         with: { name: shots-ios, path: shots/ }

@@ -8,7 +8,11 @@ APP=$(ls -d "$DERIVED"/Build/Products/Debug-iphonesimulator/App.app)
 UDID=$(xcrun simctl list devices available -j | python3 -c "
 import json,sys; d=json.load(sys.stdin)['devices']
 c=[(r,x['udid']) for r,l in d.items() if 'iOS' in r for x in l if x['name']==sys.argv[1]]
-c.sort(); print(c[-1][1])" "$DEVICE")
+c.sort(); print(c[-1][1] if c else '')" "$DEVICE")
+if [ -z "$UDID" ]; then   # older sizes (e.g. 6.5") have no default simulator: create one from the device type
+  RUNTIME=$(xcrun simctl list runtimes -j | python3 -c "import json,sys; r=[x['identifier'] for x in json.load(sys.stdin)['runtimes'] if x['platform']=='iOS' and x['isAvailable']]; print(sorted(r)[-1])")
+  UDID=$(xcrun simctl create "$DEVICE" "$DEVICE" "$RUNTIME")
+fi
 echo "device $DEVICE -> $UDID"
 xcrun simctl boot "$UDID" || true
 xcrun simctl bootstatus "$UDID" -b

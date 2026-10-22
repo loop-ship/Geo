@@ -62,6 +62,18 @@ let page = html
   .replace(/^.*<meta name="apple-mobile-web-app-[^>]*>\n/gm, '')
   .replace('<script type="importmap">', '<script src="./vendor/capacitor.js"></script>\n<script type="importmap">');
 
+// Tip jar: the Ko-fi link stays on the website only. geo.html already hides it when NATIVE, but the store
+// apps must not carry the link, button, styles or wording at all, so strip them from the app copy.
+const strip = (re, what) => { if (!re.test(page)) throw new Error(`tip-jar strip: ${what} not found in geo.html`); page = page.replace(re, ''); };
+// (geo.html has CRLF line endings, hence \r?\n)
+strip(/^.*<button id="tip-btn"[^\n]*\n/m, 'tip button');
+strip(/^ *\/\* Tip jar reads as[^\n]*\n(?:^ *#friendly-bar #tip-btn[^\n]*\n)+/m, 'tip button CSS');
+strip(/^\/\/ Optional Ko-fi tip jar[\s\S]*?^\}\);\r?\n/m, 'tip jar handler');
+page = page.replace(/the external tip jar \(store payment\r?\n\/\/ rules\), /, '')
+  .replace(/ios-install-tip/g, 'ios-install-hint').replace(/ios-tip-close/g, 'ios-hint-close')
+  .replace(/\btips?\b/gi, (m) => (m[0] === 'T' ? 'Hint' : 'hint') + (m.length > 3 ? 's' : ''));
+if (/ko-?fi|donat|tip-btn|tip jar/i.test(page)) throw new Error('tip-jar text survived the app-build strip');
+
 if (/cdn\.jsdelivr\.net/.test(page)) throw new Error('a CDN URL survived the importmap rewrite — the app would need the network');
 
 // Every addon import must resolve inside the vendored folders, or the module graph fails to load.
