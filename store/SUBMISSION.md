@@ -6,8 +6,18 @@ locally so the app works offline — and `cap sync` copies it into `android/` an
 
 What's different inside the apps (all keyed off `NATIVE` in geo.html; the website is unchanged):
 no service worker or "Install" prompts, no Ko-fi tip jar (external payment links are rejected by both
-stores), no analytics, Share uses the native share sheet and links to https://poleshift.app/geo.html,
+stores), anonymous usage counts instead of the website's page-view analytics (see "Analytics in the apps"), Share uses the native share sheet and links to https://poleshift.app/geo.html,
 the Android back button closes panels before leaving, and a **Privacy** button links to `privacy.html`.
+
+## Analytics in the apps
+
+The apps count anonymous product interaction with the same GoatCounter site as the website (code `loopship`):
+cookieless, no IDs, no IDFA, no tracking SDK, nothing personal, not linked to identity, not used for tracking.
+Events: `app/launch`, `story/step-N`, `story/driver-step-N`, `share`, `card/<id>` (hapgood, ecdo, zacharias,
+davidson), `controls/advanced`. Do Not Track is honoured; offline or blocked requests are silent no-ops.
+Screenshot builds (`STORE_SHOTS=1`) blank the site code so they never count. The App Store privacy label
+and the Play Data safety form must match (see `store/STORE_LISTING.md`) and the privacy page says the same.
+The tip link stays on the website only.
 
 ## 0. Prerequisites (one-time, accounts)
 
@@ -71,6 +81,7 @@ Target API level: the project targets **Android 16 (API 36)**, above Play's curr
 - [ ] Guided story plays to the end; scenario presets work; Simple/Advanced toggle.
 - [ ] Share opens the native sheet; the shared link opens the same view on poleshift.app.
 - [ ] Privacy button opens the policy in the browser.
+- [ ] App Privacy label = Usage Data > Product Interaction (Not Linked, Analytics, no tracking); Play Data safety = App interactions.
 - [ ] Rotate to landscape and back; notch / Dynamic Island / Android gesture bar never cover controls.
 - [ ] Android: back button closes the settings drawer, then the explainer, then exits.
 - [ ] Oldest device you can find (e.g. iPhone XR / a 3 GB-RAM Android): no crash on load. The 5400×2700
@@ -98,7 +109,7 @@ Website changes do **not** reach app users until a new app version ships — the
 | Apple 4.2 "minimum functionality" / repackaged website | All code and data bundled; works offline; native share sheet, back-button handling, no browser UI |
 | Apple 3.1.1 / Play Payments — external tip link | Tip jar removed in the apps |
 | Apple 5.1.1 / Play User Data — privacy policy | `privacy.html`, linked in-app and from both listings |
-| Privacy label mismatch | Analytics compiled out of the apps; label "Data Not Collected" |
+| Privacy label mismatch | The apps send anonymous GoatCounter event counts, so the labels must say so: App Store "Usage Data > Product Interaction, Not Linked to You, Analytics, no tracking"; Play Data safety "App activity > App interactions, collected, not shared". Privacy page says the same |
 | Icon with transparency (iOS) | Icons rendered without alpha |
 | Export compliance prompt | `ITSAppUsesNonExemptEncryption = NO` |
 | Play target API level | targetSdk 36 |

@@ -86,6 +86,9 @@ if (process.env.STORE_SHOTS === '1') {
   cpSync(join(root, 'scripts/store-shots/shot.js'), join(out, 'shot.js'));
   writeFileSync(join(out, 'shot-scene.js'), '');
   page = page.replace('<script src="./vendor/capacitor.js"></script>', '<script src="./vendor/capacitor.js"></script>\n<script src="./shot-scene.js"></script>\n<script src="./shot.js"></script>');
+  // Screenshot runs must never count as app usage.
+  if (!page.includes("const ANALYTICS = { code: 'loopship' };")) throw new Error('ANALYTICS line not found');
+  page = page.replace("const ANALYTICS = { code: 'loopship' };", "const ANALYTICS = { code: '' };");
 }
 
 writeFileSync(join(out, 'index.html'), page);

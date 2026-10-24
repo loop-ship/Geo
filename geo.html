@@ -870,7 +870,8 @@ import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 // The same geo.html ships inside the store apps (see capacitor.config.json + scripts/build-web.mjs).
 // There the page is served from capacitor://localhost (iOS) / https://localhost (Android), so anything
 // browser-only is switched off: service worker, PWA install prompts, the external tip jar (store payment
-// rules), and analytics (the store builds declare "no data collected"). Share links point at the public
+// rules). Analytics is NOT switched off there any more: the store builds send a few anonymous usage
+// counts (see ANALYTICS below). Share links point at the public
 // site, since a localhost URL is useless to the person receiving it. On the web NATIVE is false and
 // nothing below changes behaviour.
 const NATIVE = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
@@ -3491,6 +3492,7 @@ document.getElementById('scenario-close').addEventListener('click', hideScenario
 
 // apply a preset THROUGH the existing setters (single source of truth), animated; then free-explore.
 function applyPreset(p) {
+  countUse('card/' + p.id, 'Scenario card ' + p.id);
   // pole (reuses the Stage-6 animated crustal slide via updateShift)
   shiftParams.newPoleLat = p.pole.lat;
   shiftParams.newPoleLon = p.pole.lon;
@@ -3619,6 +3621,7 @@ function applySharedView(hash) {
 
 // Share action: native share sheet on mobile (it's the expected affordance there), clipboard elsewhere.
 async function shareCurrentView() {
+  countUse('share', 'Share');
   hideShareCTA();          // any share action (CTA tap or the buried menu item) dismisses a pending prompt
   const url = buildShareURL();
   const title = 'Pole-Shift Simulator';
@@ -3748,6 +3751,7 @@ const STORY_DRIVER = {
 };
 let storyCfg = STORY;            // active story config (base guided story or the E20 driver sequence)
 const _storyEls = {};
+const _storyCounted = new Set();   // analytics: story steps already counted in this run
 ['story-bar', 'story-prev', 'story-play', 'story-next', 'story-scrub', 'story-step', 'story-exit']
   .forEach(id => { _storyEls[id] = document.getElementById(id); });
 
@@ -3820,6 +3824,8 @@ function applyStoryClock(T, moveCamera) {
   const i = storyStepIndex(T);
   if (i !== story.lastStep) {
     story.lastStep = i;
+    const _sk = (storyCfg.driver ? 'story/driver-step-' : 'story/step-') + (i + 1);
+    if (!_storyCounted.has(_sk)) { _storyCounted.add(_sk); countUse(_sk, 'Story step ' + (i + 1)); }   // once per run, not per scrub
     applyStoryStepLayers(i);
     setCaptionBox(storyCfg.title + ' · STEP ' + (i + 1) + ' / ' + storyCfg.steps.length,
       STANDING.speculative.icon + ' ' + storyCfg.chipWord, STANDING.speculative.color, storyCfg.steps[i].caption);
@@ -3853,6 +3859,7 @@ function startStory(cfg) {
   // The story clock drives the SAME shiftProgress, so a replay in flight would fight it for the crust.
   replay = null; updateReplayButton();
   story.active = true; story.T = 0; story.lastStep = -1;
+  _storyCounted.clear();
   document.body.classList.add('story-active');   // CSS retargets the caption to a lower-third band + tidies the bottom bar
   if (storyCfg.driver) {   // E21: the driver sequence brings up the Sun + CME and needs room to frame the chain
     if (!_driverRestore) _driverRestore = { quality: cineParams.quality, showCME: cineParams.showCME, maxDistance: controls.maxDistance };  // stash ONCE (don't capture forced-on values on replay)
@@ -4568,8 +4575,8 @@ function setUIMode(simple) {
   if (a) a.classList.toggle('on', !simple);
 }
 document.getElementById('mode-simple').addEventListener('click', () => setUIMode(true));
-document.getElementById('mode-advanced').addEventListener('click', () => setUIMode(false));
-document.getElementById('show-all-controls').addEventListener('click', () => setUIMode(false));
+document.getElementById('mode-advanced').addEventListener('click', () => { countUse('controls/advanced', 'Advanced controls'); setUIMode(false); });
+document.getElementById('show-all-controls').addEventListener('click', () => { countUse('controls/advanced', 'Advanced controls'); setUIMode(false); });
 document.getElementById('legend-head').addEventListener('click', () => setLegendOpen(!_legendOpen));
 document.getElementById('plain-toggle').addEventListener('click', () => setPlainLanguage(!_plainOn));
 document.getElementById('explain-btn').addEventListener('click', () => { document.getElementById('explainer').style.display = 'block'; });
@@ -4684,6 +4691,18 @@ if (NativeApp) NativeApp.addListener('backButton', () => {
 //  event) and 'pwa-launch-standalone' (once per session when the app is running as an installed app).
 //  No cookies, no identifiers, nothing about the user.
 //
+//  STORE APPS (iOS / Android, NATIVE): the same GoatCounter script runs, and counts only these events
+//  (anonymous product interaction — "which parts get used"; no cookies, no IDs, no IDFA, no ad or
+//  tracking SDK, no personal data, not linked to identity; Do Not Track is honoured exactly as on the web;
+//  offline or blocked = silent no-op):
+//    app/launch            the app was opened (once per launch)
+//    story/step-N          Guided Story reached step N (N = 1..6, once per story run)
+//    story/driver-step-N   the driver sequence reached step N (once per run)
+//    share                 the share button / "Copy link to this view" was used
+//    card/<id>             a scenario card was opened: card/hapgood, card/ecdo, card/zacharias, card/davidson
+//    controls/advanced     the Advanced controls were opened
+//  Native pings are only sent from the app itself; screenshot builds (STORE_SHOTS) blank the site code.
+//
 //  THE iOS CAVEAT, so the numbers are not misread: iOS fires NEITHER beforeinstallprompt NOR
 //  appinstalled. On iPhone/iPad you will therefore see ZERO 'pwa-installed' events no matter how many
 //  people add it to their Home Screen — the only iOS signal is 'pwa-launch-standalone', which counts
@@ -4697,24 +4716,41 @@ if (NativeApp) NativeApp.addListener('backButton', () => {
 const ANALYTICS = { code: 'loopship' };    // <-- your goatcounter site code goes here; '' = disabled
 
 function analyticsEnabled() {
-  if (!ANALYTICS.code || NATIVE) return false;   // store builds collect nothing (matches their privacy labels)
-  // Honour Do Not Track, and never run from a file:// or local dev origin.
+  if (!ANALYTICS.code) return false;
+  // Honour Do Not Track (web and store apps alike).
   if (navigator.doNotTrack === '1' || window.doNotTrack === '1') return false;
-  return location.protocol === 'https:';
+  // Web: only from https (never file:// or a local dev origin). Store apps are served from
+  // capacitor://localhost (iOS) / https://localhost (Android), so NATIVE is allowed on its own.
+  return NATIVE || location.protocol === 'https:';
 }
+// Store apps: events raised before count.js has loaded wait here (capped) and are sent once it has.
+// If the script never loads (offline / blocked) they are simply never sent.
+let _gcReady = false;
+const _gcQueue = [];
 function countEvent(path, title) {
   if (!analyticsEnabled()) return;
+  if (NATIVE && !_gcReady) { if (_gcQueue.length < 20) _gcQueue.push([path, title]); return; }
   try { window.goatcounter && window.goatcounter.count &&
         window.goatcounter.count({ path, title, event: true }); } catch (e) { /* never break the app */ }
 }
+// Product-interaction counts: store apps only (the website's analytics scope is unchanged).
+function countUse(path, title) { if (NATIVE) countEvent(path, title); }
 (function initAnalytics() {
   if (!analyticsEnabled()) return;
   const s = document.createElement('script');
   s.async = true;
   s.src = 'https://gc.zgo.at/count.js';
   s.setAttribute('data-goatcounter', 'https://' + ANALYTICS.code + '.goatcounter.com/count');
+  // In the apps: no automatic page view / click binding (we send explicit events only), and allow the
+  // localhost origin, which count.js otherwise refuses to count.
+  if (NATIVE) s.setAttribute('data-goatcounter-settings', JSON.stringify({ no_onload: true, no_events: true, allow_local: true }));
   s.onerror = () => {};                       // offline or blocked: silently do nothing
   s.onload = () => {
+    if (NATIVE) {
+      _gcReady = true;
+      try { countEvent('app/launch', 'App launch'); _gcQueue.splice(0).forEach(([p, t]) => countEvent(p, t)); } catch (e) {}
+      return;
+    }
     // The ONLY signal iOS gives us: this session is running as an installed app. Once per session so a
     // long session isn't counted repeatedly — it answers "was this launched installed", not "how long".
     const standalone = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;

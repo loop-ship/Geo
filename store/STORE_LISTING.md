@@ -49,7 +49,7 @@ FEATURES
 • No accounts, no ads, no tracking
 ```
 
-**App Privacy (nutrition label):** choose **"Data Not Collected"**. The app contains no analytics or third-party SDKs (`NATIVE` in geo.html disables the website's analytics).
+**App Privacy (nutrition label):** choose **"Yes, we collect data"** and declare exactly one data type: **Usage Data → Product Interaction**. Answer: **Data Not Linked to You**; purpose **Analytics** only; **Used to Track You: No** (all other types stay unchecked: no identifiers, no contact info, no location, no diagnostics). The apps send anonymous event counts (app/launch, story/step-N, share, card/<id>, controls/advanced) to GoatCounter (cookieless, no IDs, no IDFA, no SDK; `analyticsEnabled()` in geo.html). Apple's App Privacy wording is mandatory, so update the answers in App Store Connect before submitting.
 
 **Age rating questionnaire:** answer **None** to every content category; "Unrestricted web access" **No**; Gambling / contests **No** → rating **4+**.
 
@@ -57,7 +57,7 @@ FEATURES
 
 **App Review notes** (App Review Information → Notes):
 ```
-Pole-Shift Simulator is a self-contained, offline 3D scientific simulation. All rendering (WebGL), terrain data and the physics model are bundled in the app; it makes no network requests and needs no login. 
+Pole-Shift Simulator is a self-contained, offline 3D scientific simulation. All rendering (WebGL), terrain data and the physics model are bundled in the app; it needs no login and works fully offline. The only network traffic is a few anonymous usage counts (feature use, no identifiers or personal data) sent to GoatCounter, declared in the App Privacy section as Usage Data > Product Interaction, not linked to identity, not used for tracking. 
 
 To try it: tap "▶ Play guided story" for a 60-second narrated walkthrough, or open the ⚙ controls and choose a scenario preset. Tap "What am I looking at?" for an explanation, and "Honest limitations" for the scientific caveats.
 
@@ -80,7 +80,7 @@ The scenarios are presented explicitly as hypothetical "what-if" explorations, e
 | App access | All functionality is available without special access |
 | Content rating (IARC) | Category: Reference, News, or Educational. Answer No to violence, sexuality, language, controlled substances, gambling, user interaction, sharing location, purchases → **Everyone / PEGI 3** |
 | Target audience | 13+ (avoids the Families-policy requirements; the content itself is suitable for all ages) |
-| Data safety | "Does your app collect or share any of the required user data types?" → **No**. Encrypted in transit: N/A. Deletion request: N/A |
+| Data safety | "Does your app collect or share any of the required user data types?" → **Yes, collects; shares: No**. One type only: **App activity → App interactions**. Purpose: **Analytics**. Collection is **required** (no in-app switch; Do Not Track is honoured when the device reports it). Not shared with third parties (GoatCounter acts as our service provider). Data is anonymous. **Encrypted in transit: Yes** (HTTPS). **Deletion request:** not applicable (nothing is tied to a user). Everything else: not collected |
 | Government app | No |
 | Financial features | None |
 | Health | None |
