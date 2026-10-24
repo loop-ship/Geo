@@ -32,19 +32,35 @@
 <body>
 <main>
   <h1>Privacy Policy</h1>
-  <p class="dim">Pole-Shift Simulator — website (poleshift.app) and the iOS and Android apps. Last updated 20 October 2026.</p>
+  <p class="dim">Pole-Shift Simulator — website (poleshift.app) and the iOS and Android apps. Last updated 23 October 2026.</p>
 
   <div class="summary">
-    <p><b>Short version:</b> the apps collect no data at all. There are no accounts, no ads, no tracking,
-    and nothing you do in the app is sent anywhere. The website counts anonymous page views without cookies.</p>
+    <p><b>Short version:</b> the apps collect anonymous usage data (which features get used) and approximate
+    location (your country, worked out from your IP address; the IP address itself is not stored). It is
+    collected without cookies or identifiers, is not linked to your identity and is not used for tracking.
+    There is no opt-out inside the apps beyond Do Not Track. There are no accounts, no ads and no tip link in
+    the apps. The website counts anonymous page views the same way.</p>
   </div>
 
   <h2>The iOS and Android apps</h2>
   <ul>
-    <li>The simulator runs entirely on your device. The globe, terrain and physics are bundled inside the app,
-      and it works without an internet connection.</li>
-    <li>The apps contain no analytics, advertising, crash-reporting or tracking software, and make no network
-      requests of their own.</li>
+    <li>The apps contain no advertising, crash-reporting or tracking software and no analytics SDK. The only code loaded from outside the app is GoatCounter's small open-source counting script, fetched when you are online.</li>
+    <li><b>Anonymous usage data (product interaction).</b> The apps send a small anonymous count to
+      <a href="https://www.goatcounter.com/">GoatCounter</a> when you open the app, play a Guided Story step,
+      use Share, open a scenario card, or open the Advanced controls. Each count is just an event name such as
+      "app/launch" or "share". It contains no account, name, email, device ID, advertising ID, precise location,
+      or the content of your scenario, sets no cookies, and is not linked to your identity. GoatCounter keeps
+      only aggregate totals. We use it only to see which features people use, and never for advertising or to
+      track you across other apps and websites. If you are offline or the request fails the app carries on as
+      normal.</li>
+    <li><b>Approximate location (country).</b> When a count reaches GoatCounter, it infers your country from the
+      IP address of the request and keeps only that country as part of an aggregate total. The IP address itself
+      is not stored, and no precise location is ever collected. The country is not linked to your identity or
+      to any other count and is not used for tracking.</li>
+    <li><b>No in-app opt-out.</b> There is no switch inside the apps to turn the usage counts off. The only
+      control is Do Not Track: if your device or browser engine reports it, the counts are skipped entirely.</li>
+    <li>The simulator itself runs entirely on your device. The globe, terrain and physics are bundled inside the
+      app and it works without an internet connection; the usage counts are the only thing it ever sends.</li>
     <li>The app stores a few display preferences on your device only (for example, whether you have already
       seen the introduction panel). These never leave the device and are removed when you uninstall the app.</li>
     <li>If you use <b>Share</b>, the app hands a link describing your current view (pole position and settings —
@@ -55,21 +71,22 @@
   <h2>The website</h2>
   <ul>
     <li>The website uses <a href="https://www.goatcounter.com/">GoatCounter</a> to count page views and a few
-      anonymous events (such as "app installed"). GoatCounter sets no cookies and does not build profiles or
+      anonymous events (such as "app installed"), together with the visitor's country, which GoatCounter infers from
+      the IP address without storing it. GoatCounter sets no cookies and does not build profiles or
       track you across sites. It is skipped entirely if your browser sends Do Not Track.</li>
-    <li>Like any website, the hosting provider (GitHub Pages) receives standard request information such as
+    <li>Like any website, the hosting provider (Netlify) receives standard request information such as
       your IP address in order to deliver the page. See
-      <a href="https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement">GitHub's privacy statement</a>.</li>
+      <a href="https://www.netlify.com/privacy/">Netlify's privacy policy</a>.</li>
     <li>The 3D libraries are loaded from the jsDelivr CDN, which likewise receives standard request information.</li>
     <li>The optional tip jar on the website links to Ko-fi; nothing is shared with Ko-fi unless you choose to visit it.</li>
   </ul>
 
   <h2>Children</h2>
-  <p>The simulator is suitable for all ages and collects no personal information from anyone, including children.</p>
+  <p>The simulator is suitable for all ages and collects no personal information from anyone, including children. The only data the apps send is the anonymous usage counts and approximate location (country) described above.</p>
 
   <h2>Changes and contact</h2>
   <p>If this policy changes, the updated version will be posted on this page with a new date.
-    Questions: open an issue at <a href="https://github.com/loop-ship/Geo/issues">github.com/loop-ship/Geo/issues</a>.</p>
+    Questions: open an issue at <a href="https://github.com/loop-ship/Geo/issues">github.com/loop-ship/Geo/issues</a> or email <a href="mailto:loopship33@gmail.com">loopship33@gmail.com</a>.</p>
 
   <p class="dim" style="margin-top:40px"><a href="geo.html">← Back to the simulator</a></p>
 </main>
