@@ -46,7 +46,7 @@ FEATURES
 • Simple and Advanced modes, from one-tap presets to every physics control
 • Share any view as a link
 • Works fully offline — everything is on your device
-• No accounts, no ads, no tracking
+• No accounts, no ads.
 ```
 
 **App Privacy (nutrition label):** choose **"Yes, we collect data"** and declare exactly two data types. (1) **Usage Data → Product Interaction** and (2) **Location → Coarse Location**. For both: **Data Not Linked to You**; purpose **Analytics** only; **Used to Track You: No**. All other types stay unchecked: no identifiers, no contact info, no precise location, no diagnostics. Coarse Location is the country GoatCounter infers from the request's IP address; the IP itself is not stored (https://www.goatcounter.com/privacy). The apps send anonymous event counts (app/launch, story/step-N, share, card/<id>, controls/advanced) to GoatCounter (cookieless, no IDs, no IDFA, no SDK; `analyticsEnabled()` in geo.html). Apple's App Privacy wording is mandatory, so update the answers in App Store Connect before submitting.
